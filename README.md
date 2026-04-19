@@ -18,15 +18,15 @@ Multiplatform跨平台应用里统一接入数学排版与展示能力。
 
 ### Android
 
-![android.png](docs/screenshots/android.png)
+<img alt="android.png" src="docs/screenshots/android.png" width="50%"/>
 
 ### iOS
 
-![ios.png](docs/screenshots/ios.png)
+<img alt="ios.png" src="docs/screenshots/ios.png" width="50%"/>
 
 ### JVM Desktop
 
-![desktop.png](docs/screenshots/desktop.png)
+<img alt="desktop.png" src="docs/screenshots/desktop.png" width="50%"/>
 
 ## 🧭 仓库概览
 
