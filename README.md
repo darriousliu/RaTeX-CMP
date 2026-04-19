@@ -18,11 +18,22 @@ Multiplatform跨平台应用里统一接入数学排版与展示能力。
 
 ## 📷 平台截图
 
-| 平台          | 预览                                                                      |
-|-------------|-------------------------------------------------------------------------|
-| Android     | <img alt="android.png" src="docs/screenshots/android.png" width="320"/> |
-| iOS         | <img alt="ios.png" src="docs/screenshots/ios.png" width="320"/>         |
-| JVM Desktop | <img alt="desktop.png" src="docs/screenshots/desktop.png" width="320"/> |
+<table>
+  <thead>
+    <tr>
+      <th width="25%">Android</th>
+      <th width="25%">iOS</th>
+      <th width="50%">JVM Desktop</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><img alt="android.png" src="docs/screenshots/android.png" width="100%"/></td>
+      <td><img alt="ios.png" src="docs/screenshots/ios.png" width="100%"/></td>
+      <td><img alt="desktop.png" src="docs/screenshots/desktop.png" width="100%"/></td>
+    </tr>
+  </tbody>
+</table>
 
 ## 🧭 仓库概览
 
