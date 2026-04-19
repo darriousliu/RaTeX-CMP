@@ -1,5 +1,10 @@
 # RaTeX-CMP
 
+[English Version](README-en.md) | [中文版本](README.md)
+
+[![许可证](https://img.shields.io/badge/License-MIT-orange.svg)](https://opensource.org/licenses/MIT)
+[![Kotlin](https://img.shields.io/badge/kotlin-multiplatform-blue.svg?logo=kotlin)]([http://kotlinlang.org](https://www.jetbrains.com/kotlin-multiplatform/))
+
 ✨ RaTeX-CMP 是一个面向多端 UI 场景的数学公式渲染项目，基于 Kotlin Multiplatform 与
 Compose Multiplatform 构建。核心渲染能力由 [RaTeX](https://github.com/erweixin/RaTeX) 提供。
 
