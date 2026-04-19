@@ -1,0 +1,3 @@
+[submodule "external/RaTeX"]
+	path = external/RaTeX
+	url = https://github.com/erweixin/RaTeX

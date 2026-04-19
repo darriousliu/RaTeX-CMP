@@ -1,0 +1,7 @@
+headers = ratex.h
+package = ratex
+
+staticLibraries = libratex_ffi.a
+libraryPaths.ios_simulator_arm64 = ../native/ios/ios_simulator_arm64
+libraryPaths.ios_arm64 = ../native/ios/ios_arm64
+libraryPaths.ios_x64 = ../native/ios/ios_x64
