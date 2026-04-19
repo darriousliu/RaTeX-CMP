@@ -10,23 +10,19 @@ Multiplatform跨平台应用里统一接入数学排版与展示能力。
 
 ## 🌍 支持平台
 
-- Android (arm64-v8a, armeabi-v7a, x86_64, x86)，其中x86未经测试
-- iOS
-- JVM Desktop (Windows x86_64, macOS x86_64/arm64, Linux x86_64/arm64)
+| 平台          | 架构 / 目标                                                              | 备注                                   |
+|-------------|----------------------------------------------------------------------|--------------------------------------|
+| Android     | `arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`                          | `x86` 目前未测试                          |
+| iOS         | iPhone / Simulator                                                   | 通过 Kotlin Multiplatform Framework 集成 |
+| JVM Desktop | Windows `x86_64`, macOS `x86_64` / `arm64`, Linux `x86_64` / `arm64` | Desktop native 库按当前机器支持的平台构建与发布      |
 
 ## 📷 平台截图
 
-### Android
-
-<img alt="android.png" src="docs/screenshots/android.png" width="50%"/>
-
-### iOS
-
-<img alt="ios.png" src="docs/screenshots/ios.png" width="50%"/>
-
-### JVM Desktop
-
-<img alt="desktop.png" src="docs/screenshots/desktop.png" width="50%"/>
+| 平台          | 预览                                                                      |
+|-------------|-------------------------------------------------------------------------|
+| Android     | <img alt="android.png" src="docs/screenshots/android.png" width="320"/> |
+| iOS         | <img alt="ios.png" src="docs/screenshots/ios.png" width="320"/>         |
+| JVM Desktop | <img alt="desktop.png" src="docs/screenshots/desktop.png" width="320"/> |
 
 ## 🧭 仓库概览
 
@@ -83,8 +79,10 @@ rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
 JVM Desktop：
 
 - 构建当前主机平台时，通常不需要额外执行 `rustup target add`
-- 执行 `bash prepare-jvm-rust.sh --all` 时，脚本会根据当前机器能力自动选择可构建目标，并自动执行 `rustup target add`
-- 例如在 `arm64 macOS` 上，会构建 `darwin-aarch64`、`darwin-x86-64`、`linux-aarch64`、`linux-x86-64`，不会尝试构建 `windows-x86-64`
+- 执行 `bash prepare-jvm-rust.sh --all` 时，脚本会根据当前机器能力自动选择可构建目标，并自动执行
+  `rustup target add`
+- 例如在 `arm64 macOS` 上，会构建 `darwin-aarch64`、`darwin-x86-64`、`linux-aarch64`、`linux-x86-64`
+  ，不会尝试构建 `windows-x86-64`
 
 ### 4. 准备本地产物
 
