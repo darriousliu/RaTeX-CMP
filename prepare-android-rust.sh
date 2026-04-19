@@ -39,7 +39,7 @@ abi_for() {
 }
 
 echo "==> Building ratex-ffi for Compose Multiplatform Android targets..."
-for rust_target in aarch64-linux-android armv7-linux-androideabi x86_64-linux-android; do
+for rust_target in aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android; do
     abi="$(abi_for "$rust_target")"
     echo "    -> $rust_target ($abi)"
     (

@@ -3,9 +3,10 @@ import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.Attribute
 import org.gradle.api.attributes.LibraryElements
 import org.gradle.api.attributes.Usage
-import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.Exec
 import org.gradle.jvm.tasks.Jar
+import org.gradle.kotlin.dsl.registering
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -24,6 +25,10 @@ version = properties["version"].toString()
 val ratexHeaderDir = rootProject.file("external/RaTeX/crates/ratex-ffi/include")
 val iosNativeDir = rootProject.file("native/ios")
 val desktopNativeTargetAttribute = Attribute.of("io.ratex.desktop.native.target", String::class.java)
+val projectUrl = "https://github.com/darriousliu/RaTeX-CMP"
+val projectGitUrl = "$projectUrl.git"
+val projectScmConnection = "scm:git:git://github.com/darriousliu/RaTeX-CMP.git"
+val projectScmDeveloperConnection = "scm:git:ssh://git@github.com/darriousliu/RaTeX-CMP.git"
 
 data class DesktopNativeTarget(
     val jnaDir: String,
@@ -33,6 +38,7 @@ data class DesktopNativeTarget(
     val jarTaskName: String,
     val runtimeElementsName: String,
     val verifyTaskName: String,
+    val supportedHostOs: Set<String>,
 )
 
 val desktopNativeTargets = listOf(
@@ -44,6 +50,7 @@ val desktopNativeTargets = listOf(
         jarTaskName = "desktopNativeDarwinAarch64Jar",
         runtimeElementsName = "desktopNativeDarwinAarch64RuntimeElements",
         verifyTaskName = "verifyDesktopNativeDarwinAarch64",
+        supportedHostOs = setOf("darwin"),
     ),
     DesktopNativeTarget(
         jnaDir = "darwin-x86-64",
@@ -53,6 +60,7 @@ val desktopNativeTargets = listOf(
         jarTaskName = "desktopNativeDarwinX8664Jar",
         runtimeElementsName = "desktopNativeDarwinX8664RuntimeElements",
         verifyTaskName = "verifyDesktopNativeDarwinX8664",
+        supportedHostOs = setOf("darwin"),
     ),
     DesktopNativeTarget(
         jnaDir = "linux-aarch64",
@@ -62,6 +70,7 @@ val desktopNativeTargets = listOf(
         jarTaskName = "desktopNativeLinuxAarch64Jar",
         runtimeElementsName = "desktopNativeLinuxAarch64RuntimeElements",
         verifyTaskName = "verifyDesktopNativeLinuxAarch64",
+        supportedHostOs = setOf("darwin", "linux"),
     ),
     DesktopNativeTarget(
         jnaDir = "linux-x86-64",
@@ -71,6 +80,7 @@ val desktopNativeTargets = listOf(
         jarTaskName = "desktopNativeLinuxX8664Jar",
         runtimeElementsName = "desktopNativeLinuxX8664RuntimeElements",
         verifyTaskName = "verifyDesktopNativeLinuxX8664",
+        supportedHostOs = setOf("darwin", "linux"),
     ),
     DesktopNativeTarget(
         jnaDir = "windows-x86-64",
@@ -80,24 +90,45 @@ val desktopNativeTargets = listOf(
         jarTaskName = "desktopNativeWindowsX8664Jar",
         runtimeElementsName = "desktopNativeWindowsX8664RuntimeElements",
         verifyTaskName = "verifyDesktopNativeWindowsX8664",
+        supportedHostOs = setOf("windows"),
     ),
 )
 
-fun hostDesktopNativeTarget(): DesktopNativeTarget {
+fun currentHostOs(): String {
     val osName = System.getProperty("os.name").lowercase()
+    return when {
+        "mac" in osName -> "darwin"
+        "linux" in osName -> "linux"
+        "windows" in osName -> "windows"
+        else -> error("Unsupported desktop OS: $osName")
+    }
+}
+
+fun hostDesktopNativeTarget(): DesktopNativeTarget {
+    val hostOs = currentHostOs()
     val normalizedArch = when (val archName = System.getProperty("os.arch").lowercase()) {
         "aarch64", "arm64" -> "aarch64"
         "x86_64", "amd64" -> "x86-64"
         else -> error("Unsupported desktop architecture: $archName")
     }
 
-    val jnaDir = when {
-        "mac" in osName -> "darwin-$normalizedArch"
-        "linux" in osName -> "linux-$normalizedArch"
-        "windows" in osName -> "windows-$normalizedArch"
-        else -> error("Unsupported desktop OS: $osName")
+    val jnaDir = when (hostOs) {
+        "darwin" -> "darwin-$normalizedArch"
+        "linux" -> "linux-$normalizedArch"
+        "windows" -> "windows-$normalizedArch"
+        else -> error("Unsupported desktop OS: $hostOs")
     }
     return desktopNativeTargets.first { it.jnaDir == jnaDir }
+}
+
+fun supportedDesktopNativeTargetsForCurrentHost(): List<DesktopNativeTarget> {
+    val hostOs = currentHostOs()
+    return desktopNativeTargets.filter { hostOs in it.supportedHostOs }
+}
+
+fun unsupportedDesktopNativeTargetsForCurrentHost(): List<DesktopNativeTarget> {
+    val supportedTargets = supportedDesktopNativeTargetsForCurrentHost().toSet()
+    return desktopNativeTargets.filterNot { it in supportedTargets }
 }
 
 kotlin {
@@ -200,6 +231,80 @@ val desktopNativeJarTasks = desktopNativeTargets.associateWith { target ->
     }
 }
 
+val prepareSupportedDesktopNativeArtifacts by tasks.registering(Exec::class) {
+    group = "publishing"
+    description = "Builds all desktop native artifacts supported on the current machine."
+    workingDir(rootProject.rootDir)
+    commandLine("bash", rootProject.file("prepare-jvm-rust.sh").absolutePath, "--all")
+}
+
+val supportedDesktopNativeVerifyTaskNames = supportedDesktopNativeTargetsForCurrentHost().map { it.verifyTaskName }
+
+tasks.configureEach {
+    if (name in supportedDesktopNativeVerifyTaskNames) {
+        dependsOn(prepareSupportedDesktopNativeArtifacts)
+    }
+}
+
+val verifySupportedDesktopNativeArtifacts by tasks.registering {
+    group = "publishing"
+    description = "Verifies all desktop native artifacts supported on the current machine."
+    dependsOn(supportedDesktopNativeVerifyTaskNames)
+}
+
+fun supportedDesktopNativePublishTaskNamesFor(taskSuffix: String): List<String> =
+    supportedDesktopNativeTargetsForCurrentHost().map { target ->
+        "publish${target.publicationName.replaceFirstChar(Char::titlecase)}Publication$taskSuffix"
+    }
+
+fun unsupportedDesktopNativePublishTaskNamesFor(taskSuffix: String): List<String> =
+    unsupportedDesktopNativeTargetsForCurrentHost().map { target ->
+        "publish${target.publicationName.replaceFirstChar(Char::titlecase)}Publication$taskSuffix"
+    }
+
+val supportedDesktopNativePublishTaskNames = listOf(
+    "ToMavenCentralRepository",
+    "ToMavenLocal",
+).flatMap(::supportedDesktopNativePublishTaskNamesFor)
+
+val unsupportedDesktopNativePublishTaskNames = listOf(
+    "ToMavenCentralRepository",
+    "ToMavenLocal",
+).flatMap(::unsupportedDesktopNativePublishTaskNamesFor)
+
+tasks.configureEach {
+    if (name in supportedDesktopNativePublishTaskNames) {
+        dependsOn(verifySupportedDesktopNativeArtifacts)
+    }
+    if (name in unsupportedDesktopNativePublishTaskNames) {
+        enabled = false
+    }
+}
+
+val supportedDesktopNativePublishToMavenCentralRepositoryTaskNames =
+    supportedDesktopNativePublishTaskNamesFor("ToMavenCentralRepository")
+
+val publishSupportedDesktopNativePublicationsToMavenCentralRepository by tasks.registering {
+    group = "publishing"
+    description = "Builds, verifies, and publishes all desktop native publications supported on the current machine to the mavenCentral repository."
+    dependsOn(supportedDesktopNativePublishToMavenCentralRepositoryTaskNames)
+}
+
+val supportedDesktopNativePublishToMavenLocalTaskNames =
+    supportedDesktopNativePublishTaskNamesFor("ToMavenLocal")
+
+val publishSupportedDesktopNativePublicationsToMavenLocal by tasks.registering {
+    group = "publishing"
+    description = "Builds, verifies, and publishes all desktop native publications supported on the current machine to Maven Local."
+    dependsOn(supportedDesktopNativePublishToMavenLocalTaskNames)
+}
+
+val publishSupportedDesktopNativePublicationsToMavenCentral by tasks.registering {
+    group = "publishing"
+    description = "Alias for publishSupportedDesktopNativePublicationsToMavenCentralRepository."
+    dependsOn(publishSupportedDesktopNativePublicationsToMavenCentralRepository)
+}
+
 desktopNativeTargets.forEach { target ->
     configurations.create(target.runtimeElementsName) {
         isCanBeConsumed = true
@@ -215,16 +320,16 @@ desktopNativeTargets.forEach { target ->
     }
 }
 
-extensions.configure<PublishingExtension> {
+publishing {
     publications {
-        desktopNativeTargets.forEach { target ->
+        supportedDesktopNativeTargetsForCurrentHost().forEach { target ->
             create<MavenPublication>(target.publicationName) {
                 artifactId = target.artifactId
                 artifact(desktopNativeJarTasks.getValue(target))
                 pom {
                     name.set("RaTeX Compose Native ${target.jnaDir}")
                     description.set("Desktop native runtime for RaTeX Compose Multiplatform (${target.jnaDir})")
-                    url.set("https://github.com/erweixin/RaTeX")
+                    url.set(projectUrl)
                     licenses {
                         license {
                             name.set("MIT")
@@ -232,17 +337,47 @@ extensions.configure<PublishingExtension> {
                         }
                     }
                     scm {
-                        url.set("https://github.com/erweixin/RaTeX")
-                        connection.set("scm:git:git://github.com/erweixin/RaTeX.git")
-                        developerConnection.set("scm:git:ssh://git@github.com/erweixin/RaTeX.git")
+                        url.set(projectGitUrl)
+                        connection.set(projectScmConnection)
+                        developerConnection.set(projectScmDeveloperConnection)
                     }
                     developers {
                         developer {
                             name.set("RaTeX Contributors")
-                            url.set("https://github.com/erweixin/RaTeX")
+                            url.set(projectUrl)
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+mavenPublishing {
+    publishToMavenCentral()
+    if (!project.hasProperty("skipSigning")) {
+        signAllPublications()
+    }
+
+    pom {
+        name.set("RaTeX Compose Multiplatform")
+        description.set("Compose Multiplatform LaTeX math rendering powered by RaTeX")
+        url.set(projectUrl)
+        licenses {
+            license {
+                name.set("MIT")
+                url.set("https://opensource.org/licenses/MIT")
+            }
+        }
+        scm {
+            url.set(projectGitUrl)
+            connection.set(projectScmConnection)
+            developerConnection.set(projectScmDeveloperConnection)
+        }
+        developers {
+            developer {
+                name.set("RaTeX Contributors")
+                url.set(projectUrl)
             }
         }
     }

@@ -85,7 +85,8 @@ rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
 JVM Desktop：
 
 - 构建当前主机平台时，通常不需要额外执行 `rustup target add`
-- 如果要执行 `bash prepare-jvm-rust.sh --all` 构建多平台产物，再按需安装对应 target
+- 执行 `bash prepare-jvm-rust.sh --all` 时，脚本会根据当前机器能力自动选择可构建目标，并自动执行 `rustup target add`
+- 例如在 `arm64 macOS` 上，会构建 `darwin-aarch64`、`darwin-x86-64`、`linux-aarch64`、`linux-x86-64`，不会尝试构建 `windows-x86-64`
 
 ### 4. 准备本地产物
 
@@ -107,6 +108,12 @@ JVM Desktop：
 
 ```bash
 bash prepare-jvm-rust.sh
+```
+
+准备当前机器可构建的全部 Desktop Rust 产物：
+
+```bash
+bash prepare-jvm-rust.sh --all
 ```
 
 如果你只是做 Kotlin / Compose 层开发，并且仓库里已经有可用产物，可以按需执行，而不必每次都重复准备。
@@ -183,6 +190,52 @@ bash prepare-ios-rust.sh
 ```bash
 bash prepare-jvm-rust.sh
 ```
+
+准备当前机器可构建的全部 Desktop Rust 产物：
+
+```bash
+bash prepare-jvm-rust.sh --all
+```
+
+发布库到 Maven Central：
+
+发布前请先准备好发布凭据与签名配置。
+
+发布全部 `library` 产物（包含 KMP 主库、各平台产物以及 JVM Desktop native 库）：
+
+```bash
+./gradlew :library:publishAndReleaseToMavenCentral
+```
+
+单独发布 KMP 主库：
+
+```bash
+./gradlew :library:publishKotlinMultiplatformPublicationToMavenCentralRepository
+```
+
+发布当前机器支持的全部 JVM Desktop native 库：
+
+```bash
+./gradlew :library:publishSupportedDesktopNativePublicationsToMavenCentralRepository
+```
+
+发布当前机器支持的全部 JVM Desktop native 库到 Maven Local：
+
+```bash
+./gradlew :library:publishSupportedDesktopNativePublicationsToMavenLocal
+```
+
+这个任务会自动执行：
+
+- `bash prepare-jvm-rust.sh --all`
+- 校验当前机器支持的 Desktop native 产物是否生成成功
+- 发布当前机器支持的所有 Desktop native publication
+
+例如：
+
+- 在 `arm64 macOS` 上，会发布 `darwin-aarch64`、`darwin-x86-64`、`linux-aarch64`、`linux-x86-64`
+- 在 `Linux` 上，会发布 `linux-aarch64`、`linux-x86-64`
+- 在 `Windows` 上，会发布 `windows-x86-64`
 
 ## 🙏 致谢
 
