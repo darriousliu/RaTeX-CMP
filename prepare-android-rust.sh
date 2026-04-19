@@ -3,7 +3,7 @@
 #
 # Prerequisites:
 #   cargo install cargo-ndk
-#   rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+#   rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
 #   NDK installed (set ANDROID_NDK_HOME or let cargo-ndk auto-detect)
 #
 # Output:
@@ -14,6 +14,12 @@ set -eo pipefail
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 RATEX_ROOT="$PROJECT_ROOT/external/RaTeX"
 JNILIBS="$PROJECT_ROOT/library/src/androidMain/jniLibs"
+ANDROID_TARGETS=(
+    aarch64-linux-android
+    armv7-linux-androideabi
+    x86_64-linux-android
+    i686-linux-android
+)
 
 if ! cargo ndk --version >/dev/null 2>&1; then
     cat >&2 <<'EOF'
@@ -28,6 +34,9 @@ EOF
     exit 1
 fi
 
+echo "==> Ensuring Rust Android targets are installed..."
+rustup target add "${ANDROID_TARGETS[@]}"
+
 abi_for() {
     case "$1" in
         aarch64-linux-android) echo "arm64-v8a" ;;
@@ -39,7 +48,7 @@ abi_for() {
 }
 
 echo "==> Building ratex-ffi for Compose Multiplatform Android targets..."
-for rust_target in aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android; do
+for rust_target in "${ANDROID_TARGETS[@]}"; do
     abi="$(abi_for "$rust_target")"
     echo "    -> $rust_target ($abi)"
     (
