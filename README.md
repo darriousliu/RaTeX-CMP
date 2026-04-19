@@ -10,9 +10,9 @@ Multiplatform跨平台应用里统一接入数学排版与展示能力。
 
 ## 🌍 支持平台
 
-- Android
+- Android (arm64-v8a, armeabi-v7a, x86_64, x86)，其中x86未经测试
 - iOS
-- JVM Desktop
+- JVM Desktop (Windows x86_64, macOS x86_64/arm64, Linux x86_64/arm64)
 
 ## 📷 平台截图
 
@@ -20,15 +20,15 @@ Multiplatform跨平台应用里统一接入数学排版与展示能力。
 
 ### Android
 
-预留位置：`docs/screenshots/android.png`
+![android.png](docs/screenshots/android.png)
 
 ### iOS
 
-预留位置：`docs/screenshots/ios.png`
+![ios.png](docs/screenshots/ios.png)
 
 ### JVM Desktop
 
-预留位置：`docs/screenshots/desktop.png`
+![desktop.png](docs/screenshots/desktop.png)
 
 ## 🧭 仓库概览
 
