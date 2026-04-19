@@ -4,6 +4,8 @@
 # Usage:
 #   bash prepare-jvm-rust.sh
 #   bash prepare-jvm-rust.sh --all
+#   bash prepare-jvm-rust.sh darwin-aarch64
+#   bash prepare-jvm-rust.sh linux-x86-64
 #
 # Output: library/native/{os-arch}/libratex_ffi.{dylib,so,dll}
 
@@ -46,6 +48,72 @@ target_supported_on_host() {
     esac
 }
 
+find_target_entry() {
+    local requested_target="$1"
+    for entry in "${TARGETS[@]}"; do
+        read -r rust_target jna_dir lib_file supported_hosts <<< "$entry"
+        if [ "$requested_target" = "$jna_dir" ] || [ "$requested_target" = "$rust_target" ]; then
+            printf '%s\n' "$rust_target $jna_dir $lib_file $supported_hosts"
+            return 0
+        fi
+    done
+
+    echo "Error: unsupported JVM desktop target '$requested_target'" >&2
+    echo "Supported targets:" >&2
+    for entry in "${TARGETS[@]}"; do
+        read -r _ jna_dir _ _ <<< "$entry"
+        echo "  - $jna_dir" >&2
+    done
+    exit 1
+}
+
+needs_zig_for_target() {
+    local target="$1" host_target="$2" host_os="$3"
+    if [ "$target" = "$host_target" ]; then
+        return 1
+    fi
+
+    case "$target" in
+        *unknown-linux-gnu) return 0 ;;
+        *apple-darwin)
+            if [ "$host_os" = "darwin" ]; then
+                return 1
+            fi
+            ;;
+    esac
+
+    return 1
+}
+
+build_target() {
+    local rust_target="$1" host_target="$2" host_os="$3"
+
+    if [ "$rust_target" = "$host_target" ]; then
+        cargo build --manifest-path "$RATEX_ROOT/Cargo.toml" \
+            --release -p ratex-ffi --target "$rust_target"
+        return
+    fi
+
+    case "$rust_target" in
+        *apple-darwin)
+            if [ "$host_os" != "darwin" ]; then
+                echo "Error: $host_os host cannot build Apple desktop target $rust_target" >&2
+                exit 1
+            fi
+            cargo build --manifest-path "$RATEX_ROOT/Cargo.toml" \
+                --release -p ratex-ffi --target "$rust_target"
+            ;;
+        *unknown-linux-gnu)
+            cargo zigbuild --manifest-path "$RATEX_ROOT/Cargo.toml" \
+                --release -p ratex-ffi --target "$rust_target"
+            ;;
+        *)
+            echo "Error: unsupported cross-compilation route from $host_target to $rust_target" >&2
+            exit 1
+            ;;
+    esac
+}
+
 copy_lib() {
     local rust_target="$1" jna_dir="$2" lib_file="$3"
     local src="$RATEX_ROOT/target/$rust_target/release/$lib_file"
@@ -63,9 +131,11 @@ copy_lib() {
 build_host() {
     local host_target
     host_target="$(detect_host_target)"
+    local host_os
+    host_os="$(detect_host_os "$host_target")"
 
     echo "==> Building ratex-ffi for host: $host_target"
-    cargo build --manifest-path "$RATEX_ROOT/Cargo.toml" --release -p ratex-ffi --target "$host_target"
+    build_target "$host_target" "$host_target" "$host_os"
 
     for entry in "${TARGETS[@]}"; do
         read -r target jna_dir lib_file _ <<< "$entry"
@@ -77,6 +147,31 @@ build_host() {
 
     echo "==> Error: host target $host_target not in supported list" >&2
     exit 1
+}
+
+build_one() {
+    local requested_target="$1"
+    local host_target host_os target jna_dir lib_file supported_hosts
+    host_target="$(detect_host_target)"
+    host_os="$(detect_host_os "$host_target")"
+    read -r target jna_dir lib_file supported_hosts <<< "$(find_target_entry "$requested_target")"
+
+    if ! target_supported_on_host "$supported_hosts" "$host_os"; then
+        echo "Error: target $jna_dir is not supported on host $host_target" >&2
+        exit 1
+    fi
+
+    if needs_zig_for_target "$target" "$host_target" "$host_os"; then
+        command -v cargo-zigbuild >/dev/null 2>&1 || { echo "Error: cargo-zigbuild not found. Install with: cargo install cargo-zigbuild" >&2; exit 1; }
+        command -v zig >/dev/null 2>&1 || { echo "Error: zig not found. Install with: brew install zig / apt install zig" >&2; exit 1; }
+    fi
+
+    rustup target add "$target"
+
+    echo "==> Building ratex-ffi for target: $target ($jna_dir)"
+    build_target "$target" "$host_target" "$host_os"
+    copy_lib "$target" "$jna_dir" "$lib_file"
+    echo "==> Done. Library copied to $NATIVE_DIR/$jna_dir"
 }
 
 build_all() {
@@ -102,7 +197,7 @@ build_all() {
     local needs_zig=0
     for entry in "${selected_targets[@]}"; do
         read -r target _ _ _ <<< "$entry"
-        if [ "$target" != "$host_target" ]; then
+        if needs_zig_for_target "$target" "$host_target" "$host_os"; then
             needs_zig=1
             break
         fi
@@ -127,13 +222,7 @@ build_all() {
         read -r target jna_dir lib_file _ <<< "$entry"
         echo "    → $target [starting]"
         (
-            if [ "$target" = "$host_target" ]; then
-                cargo build --manifest-path "$RATEX_ROOT/Cargo.toml" \
-                    --release -p ratex-ffi --target "$target"
-            else
-                cargo zigbuild --manifest-path "$RATEX_ROOT/Cargo.toml" \
-                    --release -p ratex-ffi --target "$target"
-            fi
+            build_target "$target" "$host_target" "$host_os"
             copy_lib "$target" "$jna_dir" "$lib_file"
         ) &
         pids+=($!)
@@ -153,5 +242,6 @@ build_all() {
 
 case "${1:-}" in
     --all) build_all ;;
-    *)     build_host ;;
+    "")    build_host ;;
+    *)     build_one "$1" ;;
 esac
