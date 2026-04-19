@@ -40,12 +40,141 @@ Multiplatform跨平台应用里统一接入数学排版与展示能力。
   </tbody>
 </table>
 
+## 🚀 使用方法
+
+### 1. 添加仓库
+
+如果你从 Maven Central 使用，确认项目仓库中已包含：
+
+```kotlin
+repositories {
+    mavenCentral()
+}
+```
+
+如果你是先本地验证再接入，也可以使用：
+
+```kotlin
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+```
+
+### 2. 引入依赖
+
+当前 KMP 主库坐标为：
+
+```kotlin
+implementation("io.github.darriousliu:ratex:0.1.2")
+```
+
+在 Kotlin Multiplatform 项目中，通常添加到 `commonMain`：
+
+```kotlin
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation("io.github.darriousliu:ratex:0.1.2")
+        }
+    }
+}
+```
+
+如果你要在 JVM Desktop 上运行，还需要额外添加当前平台对应的 native 运行时依赖：
+
+```kotlin
+kotlin {
+    sourceSets {
+        jvmMain.dependencies {
+            implementation("io.github.darriousliu:ratex:0.1.2")
+            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.2")
+        }
+    }
+}
+```
+
+可选的 Desktop native 坐标有：
+
+- `io.github.darriousliu:ratex-native-darwin-aarch64`
+- `io.github.darriousliu:ratex-native-darwin-x86-64`
+- `io.github.darriousliu:ratex-native-linux-aarch64`
+- `io.github.darriousliu:ratex-native-linux-x86-64`
+- `io.github.darriousliu:ratex-native-windows-x86-64`
+
+在这个仓库里，Desktop native 库本身是独立发布的子模块；示例工程会按当前主机平台自动选择对应的运行时依赖。
+
+### 3. 使用 Compose 组件
+
+最简单的用法是直接传入 LaTeX 字符串：
+
+```kotlin
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.sp
+import io.ratex.compose.RaTeX
+
+@Composable
+fun FormulaSample(modifier: Modifier = Modifier) {
+    RaTeX(
+        latex = """\frac{-b \pm \sqrt{b^2 - 4ac}}{2a}""",
+        modifier = modifier,
+        fontSize = 28.sp,
+        displayMode = true,
+    )
+}
+```
+
+如果你想渲染行内公式，可以将 `displayMode` 设为 `false`：
+
+```kotlin
+RaTeX(
+    latex = """e^{i\pi}+1=0""",
+    fontSize = 20.sp,
+    displayMode = false,
+)
+```
+
+### 4. 复用解析结果
+
+如果你希望先解析，再在多个地方复用 `DisplayList`，可以使用 `rememberRaTeXDisplayList`：
+
+```kotlin
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.unit.sp
+import io.ratex.compose.RaTeX
+import io.ratex.compose.rememberRaTeXDisplayList
+
+@Composable
+fun ParsedFormulaSample(latex: String) {
+    val parseResult by rememberRaTeXDisplayList(
+        latex = latex,
+        displayMode = true,
+    )
+
+    RaTeX(
+        displayList = parseResult?.getOrNull(),
+        fontSize = 28.sp,
+    )
+}
+```
+
+### 5. 主要参数说明
+
+- `latex`：要渲染的 LaTeX 公式字符串
+- `fontSize`：公式渲染字号
+- `displayMode`：`true` 为块级公式，`false` 为行内公式
+- `displayList`：已解析好的绘制结果，适合缓存或复用
+
 ## 🧭 仓库概览
 
 - `library`：核心库模块
+- `desktop-native/*`：JVM Desktop native 库发布模块
 - `example`：共享示例模块，包含 Desktop 运行入口
 - `androidApp`：Android 示例应用
 - `iosApp`：iOS 示例工程
+- `build-logic`：共享 Gradle 约定插件，封装 Desktop native 发布逻辑
 - `external/RaTeX`：上游 RaTeX submodule
 
 ## 🛠️ 本地开发
@@ -161,6 +290,7 @@ iOS 开发建议在 macOS 上打开 `iosApp/iosApp.xcodeproj` 进行调试。
 ### 6. 开发建议
 
 - 优先在当前仓库内完成 Compose UI、Kotlin API 和示例工程相关开发
+- Desktop native 发布相关改动优先收敛到 `build-logic`
 - 需要联动底层能力时，再进入 `external/RaTeX`
 - 更新 submodule 后，记得重新准备对应平台的本地产物
 - 提交改动时，注意区分当前项目改动与 submodule 改动
@@ -213,10 +343,29 @@ bash prepare-jvm-rust.sh --all
 
 发布前请先准备好发布凭据与签名配置。
 
-发布全部 `library` 产物（包含 KMP 主库、各平台产物以及 JVM Desktop native 库）：
+发布当前机器支持的全部产物到 Maven Local：
 
 ```bash
-./gradlew :library:publishAndReleaseToMavenCentral
+./gradlew publishToMavenLocal
+```
+
+这个命令会发布：
+
+- `:library` 的 KMP 主库
+- 当前机器支持的 Desktop native 子模块
+
+这也是当前推荐的本地验证方式；如果命令成功，说明主库和当前机器可发布的 Desktop native 库都会进入本地 Maven 仓库。
+
+例如：
+
+- 在 `arm64 macOS` 上，会额外发布 `ratex-native-darwin-aarch64`、`ratex-native-darwin-x86-64`、`ratex-native-linux-aarch64`、`ratex-native-linux-x86-64`
+- 在 `Linux` 上，会额外发布 `ratex-native-linux-aarch64`、`ratex-native-linux-x86-64`
+- 在 `Windows` 上，会额外发布 `ratex-native-windows-x86-64`
+
+发布当前机器支持的全部产物到 Maven Central：
+
+```bash
+./gradlew publishAndReleaseToMavenCentral
 ```
 
 单独发布 KMP 主库：
@@ -228,20 +377,22 @@ bash prepare-jvm-rust.sh --all
 发布当前机器支持的全部 JVM Desktop native 库：
 
 ```bash
-./gradlew :library:publishSupportedDesktopNativePublicationsToMavenCentralRepository
+./gradlew publishSupportedDesktopNativePublicationsToMavenCentralRepository
 ```
 
 发布当前机器支持的全部 JVM Desktop native 库到 Maven Local：
 
 ```bash
-./gradlew :library:publishSupportedDesktopNativePublicationsToMavenLocal
+./gradlew publishSupportedDesktopNativePublicationsToMavenLocal
 ```
 
 这个任务会自动执行：
 
-- `bash prepare-jvm-rust.sh --all`
+- 当前机器支持的 native 子模块发布任务
+- 每个子模块内会自动调用对应的 `prepare-jvm-rust.sh <target>`
 - 校验当前机器支持的 Desktop native 产物是否生成成功
-- 发布当前机器支持的所有 Desktop native publication
+
+这些 Desktop native 子模块共享同一套 `build-logic` 预编译脚本插件配置，只在各自模块里声明目标平台、文件名、artifactId 和支持的宿主机范围。
 
 例如：
 

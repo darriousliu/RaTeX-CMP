@@ -38,12 +38,141 @@ This repository is maintained as an independent project. It can continue evolvin
   </tbody>
 </table>
 
+## 🚀 Usage
+
+### 1. Add repositories
+
+If you are using Maven Central, make sure your project repositories include:
+
+```kotlin
+repositories {
+    mavenCentral()
+}
+```
+
+If you want to validate locally first, you can also use:
+
+```kotlin
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+```
+
+### 2. Add the dependency
+
+The current KMP main library coordinates are:
+
+```kotlin
+implementation("io.github.darriousliu:ratex:0.1.2")
+```
+
+In a Kotlin Multiplatform project, you would typically add it to `commonMain`:
+
+```kotlin
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation("io.github.darriousliu:ratex:0.1.2")
+        }
+    }
+}
+```
+
+If you want to run on JVM Desktop, you also need to add the native runtime dependency for the current platform:
+
+```kotlin
+kotlin {
+    sourceSets {
+        jvmMain.dependencies {
+            implementation("io.github.darriousliu:ratex:0.1.2")
+            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.2")
+        }
+    }
+}
+```
+
+Available Desktop native coordinates:
+
+- `io.github.darriousliu:ratex-native-darwin-aarch64`
+- `io.github.darriousliu:ratex-native-darwin-x86-64`
+- `io.github.darriousliu:ratex-native-linux-aarch64`
+- `io.github.darriousliu:ratex-native-linux-x86-64`
+- `io.github.darriousliu:ratex-native-windows-x86-64`
+
+In this repository, Desktop native libraries are published as separate submodules; the sample app automatically selects the matching runtime dependency for the current host platform.
+
+### 3. Use the Compose component
+
+The simplest usage is to pass a LaTeX string directly:
+
+```kotlin
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.sp
+import io.ratex.compose.RaTeX
+
+@Composable
+fun FormulaSample(modifier: Modifier = Modifier) {
+    RaTeX(
+        latex = """\frac{-b \pm \sqrt{b^2 - 4ac}}{2a}""",
+        modifier = modifier,
+        fontSize = 28.sp,
+        displayMode = true,
+    )
+}
+```
+
+If you want inline math, set `displayMode = false`:
+
+```kotlin
+RaTeX(
+    latex = """e^{i\pi}+1=0""",
+    fontSize = 20.sp,
+    displayMode = false,
+)
+```
+
+### 4. Reuse parsed results
+
+If you want to parse first and reuse the resulting `DisplayList` in multiple places, you can use `rememberRaTeXDisplayList`:
+
+```kotlin
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.unit.sp
+import io.ratex.compose.RaTeX
+import io.ratex.compose.rememberRaTeXDisplayList
+
+@Composable
+fun ParsedFormulaSample(latex: String) {
+    val parseResult by rememberRaTeXDisplayList(
+        latex = latex,
+        displayMode = true,
+    )
+
+    RaTeX(
+        displayList = parseResult?.getOrNull(),
+        fontSize = 28.sp,
+    )
+}
+```
+
+### 5. Main parameters
+
+- `latex`: the LaTeX formula string to render
+- `fontSize`: the rendering font size
+- `displayMode`: `true` for block math, `false` for inline math
+- `displayList`: a parsed drawing result that is useful for caching or reuse
+
 ## 🧭 Repository Overview
 
 - `library`: core library module
+- `desktop-native/*`: publishing modules for JVM Desktop native libraries
 - `example`: shared sample module, including the Desktop entry point
 - `androidApp`: Android sample app
 - `iosApp`: iOS sample project
+- `build-logic`: shared Gradle convention plugins for Desktop native publishing
 - `external/RaTeX`: upstream RaTeX submodule
 
 ## 🛠️ Local Development
@@ -157,6 +286,7 @@ For iOS development, it is recommended to open `iosApp/iosApp.xcodeproj` on macO
 ### 6. Development suggestions
 
 - Prefer completing Compose UI, Kotlin API, and sample project work within this repository first
+- Prefer keeping Desktop native publishing changes inside `build-logic`
 - Enter `external/RaTeX` only when you need to coordinate with the lower-level engine
 - After updating the submodule, remember to regenerate the corresponding platform artifacts
 - When committing changes, distinguish carefully between changes in this project and changes in the submodule
@@ -209,10 +339,29 @@ Publish the library to Maven Central:
 
 Make sure your publishing credentials and signing configuration are ready before publishing.
 
-Publish all `library` artifacts, including the KMP main library, platform artifacts, and JVM Desktop native libraries:
+Publish all artifacts supported by the current machine to Maven Local:
 
 ```bash
-./gradlew :library:publishAndReleaseToMavenCentral
+./gradlew publishToMavenLocal
+```
+
+This publishes:
+
+- the KMP main library from `:library`
+- Desktop native submodules supported by the current machine
+
+This is also the recommended local verification path. If it succeeds, both the main library and the Desktop native libraries supported by the current machine will be published to your local Maven repository.
+
+For example:
+
+- On `arm64 macOS`, it also publishes `ratex-native-darwin-aarch64`, `ratex-native-darwin-x86-64`, `ratex-native-linux-aarch64`, and `ratex-native-linux-x86-64`
+- On `Linux`, it also publishes `ratex-native-linux-aarch64` and `ratex-native-linux-x86-64`
+- On `Windows`, it also publishes `ratex-native-windows-x86-64`
+
+Publish all artifacts supported by the current machine to Maven Central:
+
+```bash
+./gradlew publishAndReleaseToMavenCentral
 ```
 
 Publish only the KMP main library:
@@ -224,20 +373,22 @@ Publish only the KMP main library:
 Publish all JVM Desktop native libraries supported by the current machine:
 
 ```bash
-./gradlew :library:publishSupportedDesktopNativePublicationsToMavenCentralRepository
+./gradlew publishSupportedDesktopNativePublicationsToMavenCentralRepository
 ```
 
 Publish all JVM Desktop native libraries supported by the current machine to Maven Local:
 
 ```bash
-./gradlew :library:publishSupportedDesktopNativePublicationsToMavenLocal
+./gradlew publishSupportedDesktopNativePublicationsToMavenLocal
 ```
 
 This task automatically:
 
-- runs `bash prepare-jvm-rust.sh --all`
+- runs the publish tasks for native submodules supported by the current machine
+- automatically calls the matching `prepare-jvm-rust.sh <target>` inside each submodule
 - verifies that Desktop native artifacts supported by the current machine were generated successfully
-- publishes all Desktop native publications supported by the current machine
+
+These Desktop native submodules share the same precompiled script plugin from `build-logic`; each module only declares its target platform, file name, artifactId, and supported host OS set.
 
 For example:
 

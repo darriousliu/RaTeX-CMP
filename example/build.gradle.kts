@@ -8,7 +8,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
-fun hostNativeRuntimeConfigurationName(): String {
+fun hostDesktopNativeProjectPath(): String {
     val osName = System.getProperty("os.name").lowercase()
     val normalizedArch = when (val archName = System.getProperty("os.arch").lowercase()) {
         "aarch64", "arm64" -> "aarch64"
@@ -17,11 +17,11 @@ fun hostNativeRuntimeConfigurationName(): String {
     }
 
     return when {
-        "mac" in osName && normalizedArch == "aarch64" -> "desktopNativeDarwinAarch64RuntimeElements"
-        "mac" in osName && normalizedArch == "x86-64" -> "desktopNativeDarwinX8664RuntimeElements"
-        "linux" in osName && normalizedArch == "aarch64" -> "desktopNativeLinuxAarch64RuntimeElements"
-        "linux" in osName && normalizedArch == "x86-64" -> "desktopNativeLinuxX8664RuntimeElements"
-        "windows" in osName && normalizedArch == "x86-64" -> "desktopNativeWindowsX8664RuntimeElements"
+        "mac" in osName && normalizedArch == "aarch64" -> ":desktop-native:darwin-aarch64"
+        "mac" in osName && normalizedArch == "x86-64" -> ":desktop-native:darwin-x86-64"
+        "linux" in osName && normalizedArch == "aarch64" -> ":desktop-native:linux-aarch64"
+        "linux" in osName && normalizedArch == "x86-64" -> ":desktop-native:linux-x86-64"
+        "windows" in osName && normalizedArch == "x86-64" -> ":desktop-native:windows-x86-64"
         else -> error("Unsupported desktop OS: $osName")
     }
 }
@@ -67,14 +67,7 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
-            runtimeOnly(
-                project(
-                    mapOf(
-                        "path" to ":library",
-                        "configuration" to hostNativeRuntimeConfigurationName(),
-                    )
-                )
-            )
+            runtimeOnly(project(hostDesktopNativeProjectPath()))
         }
         androidMain.dependencies {
             implementation(project.dependencies.platform(libs.androidx.compose.bom))

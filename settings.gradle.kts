@@ -2,6 +2,7 @@
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google {
             mavenContent {
@@ -43,3 +44,8 @@ rootProject.name = "RaTeX-CMP"
 include("library")
 include("example")
 include("androidApp")
+include("desktop-native:darwin-aarch64")
+include("desktop-native:darwin-x86-64")
+include("desktop-native:linux-aarch64")
+include("desktop-native:linux-x86-64")
+include("desktop-native:windows-x86-64")
