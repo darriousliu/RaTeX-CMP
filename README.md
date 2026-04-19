@@ -16,8 +16,6 @@ Multiplatform跨平台应用里统一接入数学排版与展示能力。
 
 ## 📷 平台截图
 
-下面预留了各平台截图的位置，后续补充截图时可以统一放在 `docs/screenshots/` 目录下。
-
 ### Android
 
 ![android.png](docs/screenshots/android.png)
