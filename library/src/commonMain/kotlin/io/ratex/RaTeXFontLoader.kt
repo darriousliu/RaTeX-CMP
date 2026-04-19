@@ -1,6 +1,6 @@
 package io.ratex
 
-import io.github.darriousliu.library.generated.resources.Res
+import io.ratex.compose.resources.Res
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock

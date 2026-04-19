@@ -173,6 +173,10 @@ kotlin {
     }
 }
 
+compose.resources {
+    packageOfResClass = "io.ratex.compose.resources"
+}
+
 val desktopNativeJarTasks = desktopNativeTargets.associateWith { target ->
     val verifyTask = tasks.register(target.verifyTaskName) {
         doLast {
