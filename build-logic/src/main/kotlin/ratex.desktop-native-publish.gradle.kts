@@ -1,6 +1,7 @@
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import io.ratex.buildlogic.RaTeXDesktopNativeExtension
 import org.gradle.api.Action
+import org.gradle.api.Project
 import org.gradle.api.publish.maven.MavenPom
 import org.gradle.api.tasks.Exec
 import org.gradle.kotlin.dsl.configure
@@ -37,6 +38,18 @@ fun currentHostOs(): String {
         "windows" in osName -> "windows"
         else -> error("Unsupported desktop OS: $osName")
     }
+}
+
+fun Project.bashExecutable(): String {
+    if (currentHostOs() != "windows") return "bash"
+
+    val candidates = listOf(
+        file("C:/Program Files/Git/bin/bash.exe"),
+        file("C:/Program Files/Git/usr/bin/bash.exe"),
+    )
+
+    return candidates.firstOrNull { it.exists() }?.absolutePath
+        ?: error("Git Bash was not found. Expected one of: ${candidates.joinToString { it.absolutePath }}")
 }
 
 afterEvaluate {
@@ -78,7 +91,7 @@ afterEvaluate {
         description = "Builds the $nativeTarget desktop native artifact."
         onlyIf { isSupportedHost }
         workingDir(rootProject.rootDir)
-        commandLine("bash", rootProject.file("prepare-jvm-rust.sh").absolutePath, nativeTarget)
+        commandLine(bashExecutable(), "./prepare-jvm-rust.sh", nativeTarget)
     }
 
     val verifyNativeArtifact = tasks.register("verifyNativeArtifact") {
