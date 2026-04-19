@@ -33,6 +33,7 @@ abi_for() {
         aarch64-linux-android) echo "arm64-v8a" ;;
         armv7-linux-androideabi) echo "armeabi-v7a" ;;
         x86_64-linux-android) echo "x86_64" ;;
+        i686-linux-android) echo "x86" ;;
         *) echo "unknown target: $1" >&2; exit 1 ;;
     esac
 }
