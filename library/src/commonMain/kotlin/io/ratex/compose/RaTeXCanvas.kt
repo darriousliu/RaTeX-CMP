@@ -36,7 +36,7 @@ private fun DrawScope.drawDisplayLine(
     val top = line.y.em(fontSizePx) - halfT
     val right = (line.x + line.width).em(fontSizePx)
     val bottom = line.y.em(fontSizePx) + halfT
-    val color = line.color.toComposeColor()
+    val color = line.color.composeColor
     if (line.dashed) {
         val dashLength = thickness * 3f
         drawLine(
@@ -60,7 +60,7 @@ private fun DrawScope.drawDisplayRect(
     fontSizePx: Float,
 ) {
     drawRect(
-        color = rect.color.toComposeColor(),
+        color = rect.color.composeColor,
         topLeft = Offset(rect.x.em(fontSizePx), rect.y.em(fontSizePx)),
         size = Size(
             width = rect.width.em(fontSizePx),
@@ -110,12 +110,12 @@ private fun DrawScope.drawDisplayPath(
     if (pathItem.fill) {
         drawPath(
             path = path,
-            color = pathItem.color.toComposeColor(),
+            color = pathItem.color.composeColor,
         )
     } else {
         drawPath(
             path = path,
-            color = pathItem.color.toComposeColor(),
+            color = pathItem.color.composeColor,
             style = Stroke(width = 1f),
         )
     }

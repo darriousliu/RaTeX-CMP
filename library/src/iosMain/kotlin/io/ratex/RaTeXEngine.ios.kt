@@ -2,6 +2,7 @@
 
 package io.ratex
 
+import androidx.compose.ui.graphics.Color
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.convert
@@ -18,11 +19,18 @@ import ratex.ratex_get_last_error
 import ratex.ratex_parse_and_layout
 
 internal actual object RaTeXEngine {
-    actual suspend fun parse(latex: String, displayMode: Boolean): DisplayList =
-        withContext(Dispatchers.Default) { parseBlocking(latex, displayMode) }
+    actual suspend fun parse(
+        latex: String,
+        displayMode: Boolean,
+        color: Color,
+    ): DisplayList = withContext(Dispatchers.Default) { parseBlocking(latex, displayMode, color) }
 
-    actual fun parseBlocking(latex: String, displayMode: Boolean): DisplayList {
-        val json = parseNativeDisplayListJson(latex, displayMode)
+    actual fun parseBlocking(
+        latex: String,
+        displayMode: Boolean,
+        color: Color,
+    ): DisplayList {
+        val json = parseNativeDisplayListJson(latex, displayMode, color)
             ?: throw RaTeXException(nativeLastErrorMessage() ?: "unknown error")
         return try {
             ratexJson.decodeFromString(DisplayList.serializer(), json)
@@ -35,10 +43,15 @@ internal actual object RaTeXEngine {
 private fun parseNativeDisplayListJson(
     latex: String,
     displayMode: Boolean,
+    color: Color,
 ): String? = memScoped {
     val options = alloc<RatexOptions>()
     options.struct_size = sizeOf<RatexOptions>().convert()
     options.display_mode = if (displayMode) 1 else 0
+    options.color.r = color.red
+    options.color.g = color.green
+    options.color.b = color.blue
+    options.color.a = color.alpha
 
     val result = ratex_parse_and_layout(latex, options.ptr)
     result.useContents {

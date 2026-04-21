@@ -10,6 +10,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.TextUnit
@@ -23,10 +25,11 @@ import io.ratex.measure
 fun rememberRaTeXDisplayList(
     latex: String,
     displayMode: Boolean = true,
-): State<Result<DisplayList>?> = produceState(initialValue = null, latex, displayMode) {
+    color: Color = LocalContentColor.current,
+): State<Result<DisplayList>?> = produceState(initialValue = null, latex, displayMode, color) {
     value = runCatching {
         RaTeXFontLoader.ensureLoaded()
-        RaTeXEngine.parse(latex, displayMode)
+        RaTeXEngine.parse(latex, displayMode, color)
     }
 }
 
@@ -36,10 +39,12 @@ fun RaTeX(
     modifier: Modifier = Modifier,
     fontSize: TextUnit = 28.sp,
     displayMode: Boolean = true,
+    color: Color = LocalContentColor.current,
 ) {
     val parseResult by rememberRaTeXDisplayList(
         latex = latex,
         displayMode = displayMode,
+        color = color,
     )
     RaTeX(
         displayList = parseResult?.getOrNull(),

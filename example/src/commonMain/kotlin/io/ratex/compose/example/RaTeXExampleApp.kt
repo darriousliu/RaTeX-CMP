@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +29,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -44,13 +47,31 @@ import io.ratex.DisplayList
 import io.ratex.compose.RaTeX
 import io.ratex.compose.rememberRaTeXDisplayList
 import io.ratex.measure
+import kotlin.random.Random
+
+fun randomComposeColor(
+    min: Float = 0.2f,
+    max: Float = 0.8f,
+    alpha: Float = 1f
+): Color {
+    fun r() = Random.nextFloat() * (max - min) + min
+    return Color(
+        red = r(),
+        green = r(),
+        blue = r(),
+        alpha = alpha.coerceIn(0f, 1f)
+    )
+}
 
 private data class FormulaSample(
     val id: String,
     val title: String,
     val latex: String,
     val displayMode: Boolean,
-)
+) {
+    val color: Color
+        get() = randomComposeColor()
+}
 
 private val sampleFormulas = listOf(
     FormulaSample(
@@ -112,77 +133,89 @@ private val sampleFormulas = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RaTeXExampleApp() {
+    val colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
+
+    MaterialTheme(colorScheme = colorScheme) {
+        RaTeXExampleContent()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RaTeXExampleContent() {
     var latex by rememberSaveable { mutableStateOf(sampleFormulas.first().latex) }
     var displayMode by rememberSaveable { mutableStateOf(sampleFormulas.first().displayMode) }
     var fontSizeDp by rememberSaveable { mutableFloatStateOf(28f) }
+//    var color by remember { mutableStateOf(Color.Black) }
+    val color = MaterialTheme.colorScheme.onSurface
 
     val parseResult by rememberRaTeXDisplayList(
         latex = latex,
         displayMode = displayMode,
+        color = color
     )
     val fontSizePx = with(LocalDensity.current) { fontSizeDp.sp.toPx() }
     val measuredDisplayList = parseResult?.getOrNull()?.measure(fontSizePx)
 
-    MaterialTheme {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("RaTeX Compose Example") },
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("RaTeX Compose Example") },
+            )
+        },
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item(key = "intro") {
+                IntroCard()
+            }
+            item(key = "editor") {
+                EditorCard(
+                    latex = latex,
+                    displayMode = displayMode,
+                    fontSizeDp = fontSizeDp,
+                    onLatexChange = { latex = it },
+                    onDisplayModeChange = { displayMode = it },
+                    onFontSizeChange = { fontSizeDp = it },
                 )
-            },
-        ) { innerPadding ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(innerPadding)
-                    .padding(horizontal = 16.dp, vertical = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                item(key = "intro") {
-                    IntroCard()
-                }
-                item(key = "editor") {
-                    EditorCard(
-                        latex = latex,
-                        displayMode = displayMode,
-                        fontSizeDp = fontSizeDp,
-                        onLatexChange = { latex = it },
-                        onDisplayModeChange = { displayMode = it },
-                        onFontSizeChange = { fontSizeDp = it },
-                    )
-                }
-                stickyHeader(key = "preview") {
-                    PreviewCard(
-                        displayList = parseResult?.getOrNull(),
-                        fontSizeDp = fontSizeDp,
-                        measuredSummary = measuredDisplayList?.let {
-                            "parsed ${parseResult?.getOrNull()?.items?.size ?: 0} items, " +
-                                    "width ${it.widthPx.toInt()}px, height ${it.totalHeightPx.toInt()}px"
-                        },
-                        parseError = parseResult?.exceptionOrNull()?.message,
-                    )
-                }
-                item(key = "examples-header") {
-                    Text(
-                        text = "Examples",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-                items(
-                    items = sampleFormulas,
-                    key = { sample -> sample.id },
-                ) { sample ->
-                    SampleFormulaCard(
-                        sample = sample,
-                        selected = sample.latex == latex && sample.displayMode == displayMode,
-                        onClick = {
-                            latex = sample.latex
-                            displayMode = sample.displayMode
-                        },
-                    )
-                }
+            }
+            stickyHeader(key = "preview") {
+                PreviewCard(
+                    displayList = parseResult?.getOrNull(),
+                    fontSizeDp = fontSizeDp,
+                    measuredSummary = measuredDisplayList?.let {
+                        "parsed ${parseResult?.getOrNull()?.items?.size ?: 0} items, " +
+                                "width ${it.widthPx.toInt()}px, height ${it.totalHeightPx.toInt()}px"
+                    },
+                    parseError = parseResult?.exceptionOrNull()?.message
+                )
+            }
+            item(key = "examples-header") {
+                Text(
+                    text = "Examples",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            items(
+                items = sampleFormulas,
+                key = { sample -> sample.id },
+            ) { sample ->
+                SampleFormulaCard(
+                    sample = sample,
+                    selected = sample.latex == latex && sample.displayMode == displayMode,
+                    onClick = {
+                        latex = sample.latex
+                        displayMode = sample.displayMode
+//                        color = sample.color
+                    },
+                )
             }
         }
     }
@@ -305,13 +338,13 @@ private fun PreviewCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .border(1.dp, Color.Red)
+                        .border(1.dp, MaterialTheme.colorScheme.outline)
                         .horizontalScroll(horizontalScrollState),
                 ) {
                     RaTeX(
                         displayList = displayList,
-                        fontSize = fontSizeDp.sp,
                         modifier = Modifier,
+                        fontSize = fontSizeDp.sp,
                     )
                 }
             }

@@ -1,6 +1,8 @@
 package io.ratex
 
+import androidx.compose.ui.graphics.Color
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class RaTeXEngineJvmTest {
@@ -20,5 +22,21 @@ class RaTeXEngineJvmTest {
             val displayList = RaTeXEngine.parseBlocking(latex, displayMode)
             assertTrue(displayList.items.isNotEmpty(), "Expected parsed items for $latex")
         }
+    }
+
+    @Test
+    fun parse_respects_color_without_overriding_explicit_latex_color() {
+        val displayList = RaTeXEngine.parseBlocking(
+            latex = """x + \color{red}{y}""",
+            displayMode = true,
+            color = Color.Blue,
+        )
+
+        val glyphColors = displayList.items
+            .mapNotNull { item -> (item as? DisplayItem.GlyphPath)?.color }
+
+        assertTrue(glyphColors.any { it.b == 1f && it.r == 0f }, "Expected default blue glyphs")
+        assertTrue(glyphColors.any { it.r == 1f && it.g == 0f && it.b == 0f }, "Expected explicit red glyphs")
+        assertEquals(1f, glyphColors.first().a)
     }
 }

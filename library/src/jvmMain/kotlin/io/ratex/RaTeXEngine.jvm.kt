@@ -1,5 +1,6 @@
 package io.ratex
 
+import androidx.compose.ui.graphics.Color
 import com.sun.jna.Library
 import com.sun.jna.Native
 import com.sun.jna.Pointer
@@ -10,13 +11,47 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
-@Structure.FieldOrder("struct_size", "display_mode")
+@Structure.FieldOrder(
+    "r",
+    "g",
+    "b",
+    "a",
+)
+internal class RatexColorStruct() : Structure() {
+    @JvmField
+    var r: Float = 0f
+
+    @JvmField
+    var g: Float = 0f
+
+    @JvmField
+    var b: Float = 0f
+
+    @JvmField
+    var a: Float = 1f
+
+    constructor(color: Color) : this() {
+        r = color.red
+        g = color.green
+        b = color.blue
+        a = color.alpha
+    }
+}
+
+@Structure.FieldOrder(
+    "struct_size",
+    "display_mode",
+    "color",
+)
 internal class RatexOptions : Structure() {
     @JvmField
     var struct_size: Long = 0
 
     @JvmField
     var display_mode: Int = 1
+
+    @JvmField
+    var color: RatexColorStruct = RatexColorStruct()
 
     init {
         struct_size = size().toLong()
@@ -119,11 +154,22 @@ internal interface RaTeXNative : Library {
 
 internal actual object RaTeXEngine {
     private val native: RaTeXNative = RaTeXNative.instance
-    actual suspend fun parse(latex: String, displayMode: Boolean): DisplayList =
-        withContext(Dispatchers.Default) { parseBlocking(latex, displayMode) }
+    actual suspend fun parse(
+        latex: String,
+        displayMode: Boolean,
+        color: Color,
+    ): DisplayList = withContext(Dispatchers.Default) { parseBlocking(latex, displayMode, color) }
 
-    actual fun parseBlocking(latex: String, displayMode: Boolean): DisplayList {
-        val opts = RatexOptions().also { it.display_mode = if (displayMode) 1 else 0 }
+    actual fun parseBlocking(
+        latex: String,
+        displayMode: Boolean,
+        color: Color,
+    ): DisplayList {
+        val opts = RatexOptions().also {
+            it.display_mode = if (displayMode) 1 else 0
+            it.color = RatexColorStruct(color)
+            it.write()
+        }
         val result = native.ratex_parse_and_layout(latex, opts)
         val ptr = if (result.error_code == 0) {
             result.data ?: throw RaTeXException("native parse returned null display list")

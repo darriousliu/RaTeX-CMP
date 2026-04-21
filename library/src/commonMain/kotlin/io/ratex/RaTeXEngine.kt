@@ -1,5 +1,6 @@
 package io.ratex
 
+import androidx.compose.ui.graphics.Color
 import io.ratex.RaTeXEngine.parse
 import io.ratex.RaTeXEngine.parseBlocking
 
@@ -23,7 +24,11 @@ internal expect object RaTeXEngine {
      * @param displayMode `true` (default) for display/block style; `false` for inline/text style.
      * @throws RaTeXException on parse or decode error.
      */
-    suspend fun parse(latex: String, displayMode: Boolean = true): DisplayList
+    suspend fun parse(
+        latex: String,
+        displayMode: Boolean = true,
+        color: Color = Color.Black,
+    ): DisplayList
 
     /**
      * Blocking variant of [parse]. Safe to call on any background thread.
@@ -32,5 +37,9 @@ internal expect object RaTeXEngine {
      * @param displayMode `true` (default) for display/block style; `false` for inline/text style.
      * @throws RaTeXException on parse or decode error.
      */
-    fun parseBlocking(latex: String, displayMode: Boolean = true): DisplayList
+    fun parseBlocking(
+        latex: String,
+        displayMode: Boolean = true,
+        color: Color = Color.Black,
+    ): DisplayList
 }

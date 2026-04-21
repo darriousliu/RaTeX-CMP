@@ -1,5 +1,6 @@
 package io.ratex
 
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -28,7 +29,11 @@ internal actual object RaTeXEngine {
      * @return JSON DisplayList string on success, or null on error.
      */
     @JvmStatic
-    private external fun nativeParseAndLayout(latex: String, displayMode: Boolean): String?
+    private external fun nativeParseAndLayout(
+        latex: String,
+        displayMode: Boolean,
+        color: FloatArray,
+    ): String?
 
     /**
      * Retrieve the last error message produced by a native layout call on this thread.
@@ -36,11 +41,22 @@ internal actual object RaTeXEngine {
     @JvmStatic
     private external fun nativeGetLastError(): String?
 
-    actual suspend fun parse(latex: String, displayMode: Boolean): DisplayList =
-        withContext(Dispatchers.Default) { parseBlocking(latex, displayMode) }
+    actual suspend fun parse(
+        latex: String,
+        displayMode: Boolean,
+        color: Color,
+    ): DisplayList = withContext(Dispatchers.Default) { parseBlocking(latex, displayMode, color) }
 
-    actual fun parseBlocking(latex: String, displayMode: Boolean): DisplayList {
-        val json = nativeParseAndLayout(latex, displayMode)
+    actual fun parseBlocking(
+        latex: String,
+        displayMode: Boolean,
+        color: Color,
+    ): DisplayList {
+        val json = nativeParseAndLayout(
+            latex = latex,
+            displayMode = displayMode,
+            color = floatArrayOf(color.red, color.green, color.blue, color.alpha),
+        )
             ?: throw RaTeXException(nativeGetLastError() ?: "unknown error")
         return try {
             ratexJson.decodeFromString(DisplayList.serializer(), json)

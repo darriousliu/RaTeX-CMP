@@ -24,7 +24,7 @@ internal actual fun DrawScope.drawPlatformGlyph(
     drawIntoCanvas { canvas ->
         textPaint.typeface = typeface
         textPaint.textSize = fontSizePx * glyph.scale.toFloat()
-        textPaint.color = glyph.color.toComposeColor().toArgb()
+        textPaint.color = glyph.color.composeColor.toArgb()
         canvas.nativeCanvas.drawText(
             text,
             glyph.x.em(fontSizePx),

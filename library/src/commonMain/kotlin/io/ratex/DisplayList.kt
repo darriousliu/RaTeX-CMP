@@ -103,12 +103,14 @@ data class RaTeXColor(
     val b: Float,
     val a: Float,
 ) {
-    fun toComposeColor(): Color = Color(
-        red = r.coerceIn(0f, 1f),
-        green = g.coerceIn(0f, 1f),
-        blue = b.coerceIn(0f, 1f),
-        alpha = a.coerceIn(0f, 1f),
-    )
+    val composeColor by lazy {
+        Color(
+            red = r.coerceIn(0f, 1f),
+            green = g.coerceIn(0f, 1f),
+            blue = b.coerceIn(0f, 1f),
+            alpha = a.coerceIn(0f, 1f),
+        )
+    }
 }
 
 internal val ratexJson = Json {

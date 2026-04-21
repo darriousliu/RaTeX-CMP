@@ -31,7 +31,7 @@ internal actual fun DrawScope.drawPlatformGlyph(
         isLinearMetrics = true
     }
     drawIntoCanvas { canvas ->
-        textPaint.color = glyph.color.toComposeColor().toArgb()
+        textPaint.color = glyph.color.composeColor.toArgb()
         canvas.nativeCanvas.drawString(
             text,
             glyph.x.em(fontSizePx),
