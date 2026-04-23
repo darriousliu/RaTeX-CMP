@@ -13,6 +13,7 @@ import kotlinx.cinterop.toKString
 import kotlinx.cinterop.useContents
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import ratex.RatexColor
 import ratex.RatexOptions
 import ratex.ratex_free_display_list
 import ratex.ratex_get_last_error
@@ -45,13 +46,16 @@ private fun parseNativeDisplayListJson(
     displayMode: Boolean,
     color: Color,
 ): String? = memScoped {
+    val ffiColor = alloc<RatexColor>()
+    ffiColor.r = color.red
+    ffiColor.g = color.green
+    ffiColor.b = color.blue
+    ffiColor.a = color.alpha
+
     val options = alloc<RatexOptions>()
     options.struct_size = sizeOf<RatexOptions>().convert()
     options.display_mode = if (displayMode) 1 else 0
-    options.color.r = color.red
-    options.color.g = color.green
-    options.color.b = color.blue
-    options.color.a = color.alpha
+    options.color = ffiColor.ptr
 
     val result = ratex_parse_and_layout(latex, options.ptr)
     result.useContents {

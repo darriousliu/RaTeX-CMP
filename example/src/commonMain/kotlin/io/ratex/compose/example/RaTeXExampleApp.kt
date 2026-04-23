@@ -136,7 +136,8 @@ fun RaTeXExampleApp() {
     val colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
 
     MaterialTheme(colorScheme = colorScheme) {
-        RaTeXExampleContent()
+//        RaTeXExampleContent()
+        RaTeXShowcasePage()
     }
 }
 

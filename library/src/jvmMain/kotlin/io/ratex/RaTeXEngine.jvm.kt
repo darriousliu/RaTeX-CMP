@@ -51,7 +51,7 @@ internal class RatexOptions : Structure() {
     var display_mode: Int = 1
 
     @JvmField
-    var color: RatexColorStruct = RatexColorStruct()
+    var color: Pointer? = null
 
     init {
         struct_size = size().toLong()
@@ -165,9 +165,10 @@ internal actual object RaTeXEngine {
         displayMode: Boolean,
         color: Color,
     ): DisplayList {
+        val nativeColor = RatexColorStruct(color).also { it.write() }
         val opts = RatexOptions().also {
             it.display_mode = if (displayMode) 1 else 0
-            it.color = RatexColorStruct(color)
+            it.color = nativeColor.pointer
             it.write()
         }
         val result = native.ratex_parse_and_layout(latex, opts)

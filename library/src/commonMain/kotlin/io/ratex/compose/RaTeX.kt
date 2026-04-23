@@ -34,6 +34,19 @@ fun rememberRaTeXDisplayList(
 }
 
 @Composable
+fun rememberBlockingRaTeXDisplayList(
+    latex: String,
+    displayMode: Boolean = true,
+    color: Color = LocalContentColor.current,
+): Result<DisplayList?> {
+    return remember(latex, displayMode, color) {
+        runCatching {
+            RaTeXEngine.parseBlocking(latex, displayMode, color)
+        }
+    }
+}
+
+@Composable
 fun RaTeX(
     latex: String,
     modifier: Modifier = Modifier,
