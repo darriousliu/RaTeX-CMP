@@ -111,6 +111,7 @@ kotlin {
 ```kotlin
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import io.ratex.compose.RaTeX
 
@@ -121,6 +122,7 @@ fun FormulaSample(modifier: Modifier = Modifier) {
         modifier = modifier,
         fontSize = 28.sp,
         displayMode = true,
+        color = Color(0xFF1565C0),
     )
 }
 ```
@@ -135,6 +137,8 @@ RaTeX(
 )
 ```
 
+如果你希望颜色跟随当前 Material 主题文本色，也可以直接省略 `color` 参数，组件默认会读取 `LocalContentColor.current`。
+
 ### 4. 复用解析结果
 
 如果你希望先解析，再在多个地方复用 `DisplayList`，可以使用 `rememberRaTeXDisplayList`：
@@ -142,6 +146,7 @@ RaTeX(
 ```kotlin
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.sp
 import io.ratex.compose.RaTeX
 import io.ratex.compose.rememberRaTeXDisplayList
@@ -151,6 +156,7 @@ fun ParsedFormulaSample(latex: String) {
     val parseResult by rememberRaTeXDisplayList(
         latex = latex,
         displayMode = true,
+        color = MaterialTheme.colorScheme.primary,
     )
 
     RaTeX(
@@ -160,18 +166,42 @@ fun ParsedFormulaSample(latex: String) {
 }
 ```
 
+如果你在行内占位、文本混排或预计算尺寸的场景下，需要同步拿到结果，也可以使用 `rememberBlockingRaTeXDisplayList`：
+
+```kotlin
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.sp
+import io.ratex.compose.RaTeX
+import io.ratex.compose.rememberBlockingRaTeXDisplayList
+
+@Composable
+fun InlineFormulaSample(latex: String) {
+    val parseResult = rememberBlockingRaTeXDisplayList(
+        latex = latex,
+        displayMode = false,
+    )
+
+    RaTeX(
+        displayList = parseResult.getOrNull(),
+        fontSize = 18.sp,
+    )
+}
+```
+
 ### 5. 主要参数说明
 
 - `latex`：要渲染的 LaTeX 公式字符串
 - `fontSize`：公式渲染字号
 - `displayMode`：`true` 为块级公式，`false` 为行内公式
+- `color`：公式颜色；默认继承当前组合环境中的 `LocalContentColor.current`
 - `displayList`：已解析好的绘制结果，适合缓存或复用
+- `rememberBlockingRaTeXDisplayList`：同步解析辅助 API，适合嵌入文本或需要立即测量公式尺寸的场景
 
 ## 🧭 仓库概览
 
 - `library`：核心库模块
 - `desktop-native/*`：JVM Desktop native 库发布模块
-- `example`：共享示例模块，包含 Desktop 运行入口
+- `example`：共享示例模块，包含 Desktop 运行入口和新的 `RaTeXShowcasePage`
 - `androidApp`：Android 示例应用
 - `iosApp`：iOS 示例工程
 - `build-logic`：共享 Gradle 约定插件，封装 Desktop native 发布逻辑

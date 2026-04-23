@@ -109,6 +109,7 @@ The simplest usage is to pass a LaTeX string directly:
 ```kotlin
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import io.ratex.compose.RaTeX
 
@@ -119,6 +120,7 @@ fun FormulaSample(modifier: Modifier = Modifier) {
         modifier = modifier,
         fontSize = 28.sp,
         displayMode = true,
+        color = Color(0xFF1565C0),
     )
 }
 ```
@@ -133,6 +135,8 @@ RaTeX(
 )
 ```
 
+If you want the formula color to follow the current Material text color, you can omit `color` and the composable will use `LocalContentColor.current`.
+
 ### 4. Reuse parsed results
 
 If you want to parse first and reuse the resulting `DisplayList` in multiple places, you can use `rememberRaTeXDisplayList`:
@@ -140,6 +144,7 @@ If you want to parse first and reuse the resulting `DisplayList` in multiple pla
 ```kotlin
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.sp
 import io.ratex.compose.RaTeX
 import io.ratex.compose.rememberRaTeXDisplayList
@@ -149,6 +154,7 @@ fun ParsedFormulaSample(latex: String) {
     val parseResult by rememberRaTeXDisplayList(
         latex = latex,
         displayMode = true,
+        color = MaterialTheme.colorScheme.primary,
     )
 
     RaTeX(
@@ -158,18 +164,42 @@ fun ParsedFormulaSample(latex: String) {
 }
 ```
 
+If you need the parsed result synchronously for inline placeholders, mixed text rendering, or immediate size measurement, you can use `rememberBlockingRaTeXDisplayList`:
+
+```kotlin
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.sp
+import io.ratex.compose.RaTeX
+import io.ratex.compose.rememberBlockingRaTeXDisplayList
+
+@Composable
+fun InlineFormulaSample(latex: String) {
+    val parseResult = rememberBlockingRaTeXDisplayList(
+        latex = latex,
+        displayMode = false,
+    )
+
+    RaTeX(
+        displayList = parseResult.getOrNull(),
+        fontSize = 18.sp,
+    )
+}
+```
+
 ### 5. Main parameters
 
 - `latex`: the LaTeX formula string to render
 - `fontSize`: the rendering font size
 - `displayMode`: `true` for block math, `false` for inline math
+- `color`: formula color; defaults to `LocalContentColor.current` from the current composition
 - `displayList`: a parsed drawing result that is useful for caching or reuse
+- `rememberBlockingRaTeXDisplayList`: a synchronous parsing helper for inline text composition or immediate measurement needs
 
 ## 🧭 Repository Overview
 
 - `library`: core library module
 - `desktop-native/*`: publishing modules for JVM Desktop native libraries
-- `example`: shared sample module, including the Desktop entry point
+- `example`: shared sample module, including the Desktop entry point and the new `RaTeXShowcasePage`
 - `androidApp`: Android sample app
 - `iosApp`: iOS sample project
 - `build-logic`: shared Gradle convention plugins for Desktop native publishing
