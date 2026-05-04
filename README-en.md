@@ -64,7 +64,7 @@ repositories {
 The current KMP main library coordinates are:
 
 ```kotlin
-implementation("io.github.darriousliu:ratex:0.1.2")
+implementation("io.github.darriousliu:ratex:0.1.4")
 ```
 
 In a Kotlin Multiplatform project, you would typically add it to `commonMain`:
@@ -73,7 +73,7 @@ In a Kotlin Multiplatform project, you would typically add it to `commonMain`:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.2")
+            implementation("io.github.darriousliu:ratex:0.1.4")
         }
     }
 }
@@ -85,8 +85,8 @@ If you want to run on JVM Desktop, you also need to add the native runtime depen
 kotlin {
     sourceSets {
         jvmMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.2")
-            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.2")
+            implementation("io.github.darriousliu:ratex:0.1.4")
+            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.4")
         }
     }
 }

@@ -21,6 +21,17 @@ internal actual fun decodePlatformTypeFace(fontId: String, bytes: ByteArray): Pl
     return Typeface.createFromFile(fontFile)
 }
 
+internal actual fun resolvePlatformFallbackTypeFace(
+    fontId: String,
+    charCode: Int,
+): PlatformTypeFace? {
+    return if (isUnicodeFallbackFontId(fontId)) {
+        Typeface.DEFAULT
+    } else {
+        null
+    }
+}
+
 internal actual object FontCache {
     private val cache = ConcurrentHashMap<String, PlatformTypeFace>()
 

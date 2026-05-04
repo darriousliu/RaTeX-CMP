@@ -1,8 +1,10 @@
 package io.ratex
 
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class RaTeXEngineJvmTest {
@@ -38,5 +40,34 @@ class RaTeXEngineJvmTest {
         assertTrue(glyphColors.any { it.b == 1f && it.r == 0f }, "Expected default blue glyphs")
         assertTrue(glyphColors.any { it.r == 1f && it.g == 0f && it.b == 0f }, "Expected explicit red glyphs")
         assertEquals(1f, glyphColors.first().a)
+    }
+
+    @Test
+    fun parse_unicode_text_uses_cjk_regular_font() {
+        val displayList = RaTeXEngine.parseBlocking(
+            latex = "\\text{\u4E2D\u6587 \uD83D\uDE0A}",
+            displayMode = true,
+        )
+
+        val glyphFonts = displayList.items
+            .mapNotNull { item -> (item as? DisplayItem.GlyphPath)?.font }
+
+        assertTrue(
+            glyphFonts.contains(FONT_ID_CJK_REGULAR),
+            "Expected $FONT_ID_CJK_REGULAR glyph font for Unicode fallback text, got $glyphFonts",
+        )
+    }
+
+    @Test
+    fun loads_cjk_platform_fallback_typeface() {
+        runBlocking {
+            RaTeXFontLoader.clear()
+            RaTeXFontLoader.ensureLoaded()
+
+            assertNotNull(
+                RaTeXFontLoader.getPlatformTypeFace(FONT_ID_CJK_REGULAR, 0x4E2D),
+                "Expected a platform typeface for $FONT_ID_CJK_REGULAR",
+            )
+        }
     }
 }

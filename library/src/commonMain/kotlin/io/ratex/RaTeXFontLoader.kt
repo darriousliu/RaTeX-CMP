@@ -37,7 +37,7 @@ object RaTeXFontLoader {
     )
 
     /**
-     * Ensure KaTeX fonts are loaded; if not, load from resources. No-op if already loaded.
+     * Ensure KaTeX fonts are loaded; system Unicode fallback fonts are resolved lazily by platform.
      * @return Number of fonts loaded (0 if already loaded)
      */
     suspend fun ensureLoaded(): Int {
@@ -78,7 +78,17 @@ object RaTeXFontLoader {
     }
 
     @JvmStatic
-    internal fun getPlatformTypeFace(fontId: String): PlatformTypeFace? = FontCache[fontId]
+    internal fun getPlatformTypeFace(
+        fontId: String,
+        charCode: Int? = null,
+    ): PlatformTypeFace? {
+        FontCache[fontId]?.let { return it }
+        if (!isUnicodeFallbackFontId(fontId)) return null
+        return resolvePlatformFallbackTypeFace(
+            fontId = fontId,
+            charCode = fallbackCodePoint(fontId, charCode),
+        )
+    }
 
     @JvmStatic
     fun clear() {
@@ -91,8 +101,37 @@ internal expect class PlatformTypeFace
 
 internal expect fun decodePlatformTypeFace(fontId: String, bytes: ByteArray): PlatformTypeFace?
 
+internal expect fun resolvePlatformFallbackTypeFace(
+    fontId: String,
+    charCode: Int,
+): PlatformTypeFace?
+
 internal expect object FontCache {
     operator fun get(fontId: String): PlatformTypeFace?
     operator fun set(fontId: String, typeFace: PlatformTypeFace)
     fun clear()
 }
+
+internal const val FONT_ID_CJK_REGULAR = "CJK-Regular"
+internal const val FONT_ID_CJK_FALLBACK = "CJK-Fallback"
+internal const val FONT_ID_EMOJI_FALLBACK = "Emoji-Fallback"
+
+private val unicodeFallbackFontIds = setOf(
+    FONT_ID_CJK_REGULAR,
+    FONT_ID_CJK_FALLBACK,
+    FONT_ID_EMOJI_FALLBACK,
+)
+
+internal fun isUnicodeFallbackFontId(fontId: String): Boolean = fontId in unicodeFallbackFontIds
+
+private fun fallbackCodePoint(fontId: String, charCode: Int?): Int {
+    if (charCode != null && charCode.isValidUnicodeCodePoint()) return charCode
+    return when (fontId) {
+        FONT_ID_EMOJI_FALLBACK -> 0x1F60A
+        FONT_ID_CJK_FALLBACK -> 0x2605
+        else -> 0x4E2D
+    }
+}
+
+private fun Int.isValidUnicodeCodePoint(): Boolean =
+    this in 0..0x10FFFF && this !in 0xD800..0xDFFF

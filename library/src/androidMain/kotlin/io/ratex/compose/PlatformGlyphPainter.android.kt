@@ -17,9 +17,9 @@ internal actual fun DrawScope.drawPlatformGlyph(
     glyph: DisplayItem.GlyphPath,
     fontSizePx: Float,
 ) {
-    val typeface = RaTeXFontLoader.getPlatformTypeFace(glyph.font) ?: return
     val codePoint = glyph.charCode
     if (!Character.isValidCodePoint(codePoint)) return
+    val typeface = RaTeXFontLoader.getPlatformTypeFace(glyph.font, codePoint) ?: return
     val text = String(Character.toChars(codePoint))
     drawIntoCanvas { canvas ->
         textPaint.typeface = typeface

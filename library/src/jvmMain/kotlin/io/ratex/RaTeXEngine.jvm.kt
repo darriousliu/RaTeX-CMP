@@ -54,7 +54,7 @@ internal class RatexOptions : Structure() {
     var color: Pointer? = null
 
     init {
-        struct_size = size().toLong()
+        struct_size = Native.getNativeSize(RatexOptions::class.java, null).toLong()
     }
 }
 

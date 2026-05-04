@@ -48,6 +48,7 @@ private val showcaseInlineParagraphs = listOf(
     $$"""A circle of radius $r$ has area $S = \pi r^2$ and circumference $C = 2\pi r$.""",
     """The golden ratio $\varphi = \frac{1+\sqrt{5}}{2}$ satisfies $\varphi^2 = \varphi + 1$.""",
     $$"""If $A = \begin{pmatrix} a & b \\ c & d \end{pmatrix}$, then $\det A = ad - bc$.""",
+    """中文：勾股定理是 $\text{勾股定理：} a^2+b^2=c^2$。""",
 )
 
 private val showcaseBlockSamples = listOf(
