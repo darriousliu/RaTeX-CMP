@@ -2,6 +2,7 @@ package io.ratex.compose
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -10,9 +11,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
@@ -20,6 +20,7 @@ import io.ratex.DisplayList
 import io.ratex.RaTeXEngine
 import io.ratex.RaTeXFontLoader
 import io.ratex.measure
+import kotlinx.coroutines.runBlocking
 
 @Composable
 fun rememberRaTeXDisplayList(
@@ -41,6 +42,7 @@ fun rememberBlockingRaTeXDisplayList(
 ): Result<DisplayList?> {
     return remember(latex, displayMode, color) {
         runCatching {
+            runBlocking { RaTeXFontLoader.ensureLoaded() }
             RaTeXEngine.parseBlocking(latex, displayMode, color)
         }
     }

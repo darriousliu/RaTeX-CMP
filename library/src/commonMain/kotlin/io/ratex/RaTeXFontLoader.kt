@@ -2,8 +2,11 @@ package io.ratex
 
 import io.ratex.compose.resources.Res
 import kotlinx.atomicfu.atomic
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlin.jvm.JvmStatic
 
 object RaTeXFontLoader {
@@ -41,7 +44,11 @@ object RaTeXFontLoader {
         if (fontsLoaded.value) return 0
         loadLock.withLock {
             if (fontsLoaded.value) return 0
-            return loadFromResources().also { fontsLoaded.value = true }
+            return withContext(Dispatchers.IO) {
+                loadFromResources().also {
+                    fontsLoaded.value = true
+                }
+            }
         }
     }
 

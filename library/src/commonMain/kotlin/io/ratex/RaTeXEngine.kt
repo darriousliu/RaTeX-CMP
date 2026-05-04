@@ -16,7 +16,7 @@ class RaTeXException(message: String) : Exception(message)
  * Note: [parse] is a suspend function; call it from a coroutine.
  * For one-shot calls from non-coroutine code, use [parseBlocking].
  */
-internal expect object RaTeXEngine {
+expect object RaTeXEngine {
     /**
      * Parse [latex] and return a [DisplayList] decoded from the JSON result.
      * Runs on [kotlinx.coroutines.Dispatchers.Default].

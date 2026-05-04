@@ -152,7 +152,7 @@ internal interface RaTeXNative : Library {
     }
 }
 
-internal actual object RaTeXEngine {
+actual object RaTeXEngine {
     private val native: RaTeXNative = RaTeXNative.instance
     actual suspend fun parse(
         latex: String,

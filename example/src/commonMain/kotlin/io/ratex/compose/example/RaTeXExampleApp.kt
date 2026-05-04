@@ -128,6 +128,12 @@ private val sampleFormulas = listOf(
         latex = """T(x)=\begin{cases}\begin{pmatrix}1&x&x^2\\0&1&2x\\0&0&1\end{pmatrix},&x\ge 0\\[1.2em]\begin{pmatrix}1&0&0\\-x&1&0\\x^2&-2x&1\end{pmatrix},&x<0\end{cases}""",
         displayMode = true,
     ),
+    FormulaSample(
+        id="longlongformula",
+        title = "Long Formula",
+        latex = """\displaystyle \mathcal{S}(x)=\frac{\sum_{i=1}^{n}\frac{\alpha_i\beta_i}{1+\exp\left(-\frac{x_i-\mu_i}{\sigma_i+\varepsilon}\right)}+\prod_{j=1}^{m}\left(1+\frac{\lambda_j^2}{\omega_j^2+\theta_j^2}\right)}{\sqrt{1+\left(\int_{0}^{T}\frac{\sin(\kappa t)+\cos(\rho t)}{\sqrt{1+t^2}}\,dt\right)^2}}+\left(\begin{array}{c}\sum_{r=1}^{p}\frac{\Gamma\left(r+\tfrac12\right)}{\Gamma(r+1)}\\[4pt]\prod_{s=1}^{q}\left(1+\frac{\eta_s}{1+\eta_s^2}\right)\\[4pt]\int_{0}^{1}\frac{u^{a-1}(1-u)^{b-1}}{B(a,b)}\,du\end{array}\right)_{2}""",
+        displayMode = false
+    )
 )
 
 @OptIn(ExperimentalMaterial3Api::class)

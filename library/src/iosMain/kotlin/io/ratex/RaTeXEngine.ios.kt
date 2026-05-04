@@ -19,7 +19,7 @@ import ratex.ratex_free_display_list
 import ratex.ratex_get_last_error
 import ratex.ratex_parse_and_layout
 
-internal actual object RaTeXEngine {
+actual object RaTeXEngine {
     actual suspend fun parse(
         latex: String,
         displayMode: Boolean,

@@ -14,7 +14,7 @@ import kotlinx.coroutines.withContext
  * Note: [parse] is a suspend function; call it from a coroutine.
  * For one-shot calls from non-coroutine code, use [parseBlocking].
  */
-internal actual object RaTeXEngine {
+actual object RaTeXEngine {
     init {
         System.loadLibrary("ratex_ffi")
     }
