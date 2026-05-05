@@ -21,8 +21,9 @@ internal actual fun DrawScope.drawPlatformGlyph(
     glyph: DisplayItem.GlyphPath,
     fontSizePx: Float,
 ) {
-    val text = glyph.charCode.toCodePointString() ?: return
-    val typeface = RaTeXFontLoader.getPlatformTypeFace(glyph.font, glyph.charCode) ?: return
+    val codePoint = glyph.charCode
+    val text = codePoint.toCodePointString() ?: return
+    val typeface = RaTeXFontLoader.getPlatformTypeFace(glyph.font, codePoint) ?: return
     val font = Font(typeface, fontSizePx * glyph.scale.toFloat()).apply {
         edging = FontEdging.SUBPIXEL_ANTI_ALIAS
         isSubpixel = true
