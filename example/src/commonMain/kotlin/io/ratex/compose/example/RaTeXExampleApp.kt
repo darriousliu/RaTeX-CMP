@@ -93,6 +93,24 @@ private val sampleFormulas = listOf(
         displayMode = true,
     ),
     FormulaSample(
+        id = "cjk-text",
+        title = "CJK Text Labels",
+        latex = """\text{中文公式：} E = mc^2,\quad \text{面积} = \pi r^2""",
+        displayMode = true,
+    ),
+    FormulaSample(
+        id = "cjk-fraction",
+        title = "CJK Fraction Labels",
+        latex = """\frac{\text{路程}}{\text{时间}} = \text{速度},\qquad \frac{\text{质量}}{\text{体积}} = \text{密度}""",
+        displayMode = true,
+    ),
+    FormulaSample(
+        id = "emoji-text",
+        title = "Emoji Text Labels",
+        latex = """\text{状态：✅ 成功，⭐ 收藏，😊 反馈}\quad x+y=z""",
+        displayMode = true,
+    ),
+    FormulaSample(
         id = "binomial",
         title = "Binomial Theorem",
         latex = """(x+y)^n = \sum_{k=0}^{n}\binom{n}{k}x^{n-k}y^k""",

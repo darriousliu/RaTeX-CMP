@@ -7,7 +7,7 @@
 
 ✨ RaTeX-CMP is a math formula rendering project for multi-platform UI scenarios, built with Kotlin Multiplatform and Compose Multiplatform. Its core rendering capability is powered by [RaTeX](https://github.com/erweixin/RaTeX).
 
-It allows the same formula rendering engine to be reused across Android, iOS, and JVM Desktop, making it easier to integrate consistent mathematical typesetting and display into Compose Multiplatform applications.
+It allows the same formula rendering engine to be reused across Android, iOS, JVM Desktop, JS, and Wasm, making it easier to integrate consistent mathematical typesetting and display into Compose Multiplatform applications.
 
 This repository is maintained as an independent project. It can continue evolving as a library while also serving as a sample project and integration reference.
 
@@ -18,6 +18,7 @@ This repository is maintained as an independent project. It can continue evolvin
 | Android | `arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86` | `x86` is currently untested |
 | iOS | iPhone / Simulator | Integrated via Kotlin Multiplatform Framework |
 | JVM Desktop | Windows `x86_64`, macOS `x86_64` / `arm64`, Linux `x86_64` / `arm64` | Desktop native libraries are built and published based on what the current machine supports |
+| Web | `js(IR)`, `wasmJs` | Both targets share `webMain` and load WASM through the `ratex-wasm` npm package |
 
 ## 📷 Screenshots
 
@@ -186,6 +187,8 @@ fun InlineFormulaSample(latex: String) {
 }
 ```
 
+Note: JS/Wasm browser targets need asynchronous WASM initialization, so prefer `rememberRaTeXDisplayList` / `RaTeX(latex = ...)` for the first parse. `rememberBlockingRaTeXDisplayList` is intended mainly for Android, iOS, and JVM Desktop.
+
 ### 5. Main parameters
 
 - `latex`: the LaTeX formula string to render
@@ -199,7 +202,7 @@ fun InlineFormulaSample(latex: String) {
 
 - `library`: core library module
 - `desktop-native/*`: publishing modules for JVM Desktop native libraries
-- `example`: shared sample module, including the Desktop entry point and the new `RaTeXShowcasePage`
+- `example`: shared sample module, including the Desktop, JS/Wasm entry points and the new `RaTeXShowcasePage`
 - `androidApp`: Android sample app
 - `iosApp`: iOS sample project
 - `build-logic`: shared Gradle convention plugins for Desktop native publishing
@@ -313,6 +316,13 @@ On Windows:
 
 For iOS development, it is recommended to open `iosApp/iosApp.xcodeproj` on macOS for debugging.
 
+Web sample:
+
+```bash
+./gradlew :example:jsBrowserDevelopmentRun
+./gradlew :example:wasmJsBrowserDevelopmentRun
+```
+
 ### 6. Development suggestions
 
 - Prefer completing Compose UI, Kotlin API, and sample project work within this repository first
@@ -339,6 +349,13 @@ Build the Android sample:
 
 ```bash
 ./gradlew :androidApp:assembleDebug
+```
+
+Run the Web sample:
+
+```bash
+./gradlew :example:jsBrowserDevelopmentRun
+./gradlew :example:wasmJsBrowserDevelopmentRun
 ```
 
 Prepare Android Rust artifacts:

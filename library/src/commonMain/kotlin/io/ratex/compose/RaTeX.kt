@@ -20,7 +20,6 @@ import io.ratex.DisplayList
 import io.ratex.RaTeXEngine
 import io.ratex.RaTeXFontLoader
 import io.ratex.measure
-import kotlinx.coroutines.runBlocking
 
 @Composable
 fun rememberRaTeXDisplayList(
@@ -42,7 +41,7 @@ fun rememberBlockingRaTeXDisplayList(
 ): Result<DisplayList?> {
     return remember(latex, displayMode, color) {
         runCatching {
-            runBlocking { RaTeXFontLoader.ensureLoaded() }
+            ensureRaTeXFontsLoadedBlocking()
             RaTeXEngine.parseBlocking(latex, displayMode, color)
         }
     }

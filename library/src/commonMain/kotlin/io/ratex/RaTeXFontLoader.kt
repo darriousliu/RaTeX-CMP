@@ -2,11 +2,10 @@ package io.ratex
 
 import io.ratex.compose.resources.Res
 import kotlinx.atomicfu.atomic
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmStatic
 
 object RaTeXFontLoader {
@@ -44,7 +43,7 @@ object RaTeXFontLoader {
         if (fontsLoaded.value) return 0
         loadLock.withLock {
             if (fontsLoaded.value) return 0
-            return withContext(Dispatchers.IO) {
+            return withContext(ratexFontLoadContext) {
                 loadFromResources().also {
                     fontsLoaded.value = true
                 }
@@ -77,12 +76,51 @@ object RaTeXFontLoader {
         return loadedFonts
     }
 
+    /**
+     * Register an app-provided font for a RaTeX FontId, such as "CJK-Regular",
+     * "CJK-Fallback", or "Emoji-Fallback".
+     *
+     * Browser targets do not have reliable access to host system fonts from Skia,
+     * so apps that need CJK or emoji glyphs should call this after [ensureLoaded].
+     */
+    @JvmStatic
+    fun registerFont(
+        fontId: String,
+        bytes: ByteArray,
+    ): Boolean {
+        val typeFace = decodePlatformTypeFace(fontId, bytes) ?: return false
+        FontCache[fontId] = typeFace
+        return true
+    }
+
+    /**
+     * Register one app-provided CJK font for both "CJK-Regular" and "CJK-Fallback".
+     */
+    @JvmStatic
+    fun registerCjkFallbackFont(bytes: ByteArray): Int {
+        val typeFace = decodePlatformTypeFace(FONT_ID_CJK_REGULAR, bytes) ?: return 0
+        FontCache[FONT_ID_CJK_REGULAR] = typeFace
+        FontCache[FONT_ID_CJK_FALLBACK] = typeFace
+        return 2
+    }
+
+    /**
+     * Register an app-provided emoji fallback font for "Emoji-Fallback".
+     */
+    @JvmStatic
+    fun registerEmojiFallbackFont(bytes: ByteArray): Boolean =
+        registerFont(FONT_ID_EMOJI_FALLBACK, bytes)
+
     @JvmStatic
     internal fun getPlatformTypeFace(
         fontId: String,
         charCode: Int? = null,
     ): PlatformTypeFace? {
-        FontCache[fontId]?.let { return it }
+        FontCache[fontId]?.let { typeFace ->
+            if (!isUnicodeFallbackFontId(fontId)) return typeFace
+            val codePoint = fallbackCodePoint(fontId, charCode)
+            if (platformTypeFaceSupports(typeFace, codePoint)) return typeFace
+        }
         if (!isUnicodeFallbackFontId(fontId)) return null
         return resolvePlatformFallbackTypeFace(
             fontId = fontId,
@@ -97,9 +135,13 @@ object RaTeXFontLoader {
     }
 }
 
+internal expect val ratexFontLoadContext: CoroutineContext
+
 internal expect class PlatformTypeFace
 
 internal expect fun decodePlatformTypeFace(fontId: String, bytes: ByteArray): PlatformTypeFace?
+
+internal expect fun platformTypeFaceSupports(typeFace: PlatformTypeFace, charCode: Int): Boolean
 
 internal expect fun resolvePlatformFallbackTypeFace(
     fontId: String,

@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -26,11 +27,23 @@ fun hostDesktopNativeProjectPath(): String {
     }
 }
 
+@OptIn(ExperimentalWasmDsl::class)
 kotlin {
     jvm {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
+    }
+
+    js(IR) {
+        useEsModules()
+        browser()
+        binaries.executable()
+    }
+
+    wasmJs {
+        browser()
+        binaries.executable()
     }
 
     android {
@@ -61,6 +74,7 @@ kotlin {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
+            implementation(libs.compose.components.resources)
             implementation(libs.compose.ui)
             implementation(libs.compose.uiToolingPreview)
         }
@@ -76,6 +90,10 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtime.ktx)
         }
     }
+}
+
+compose.resources {
+    packageOfResClass = "io.ratex.compose.example.resources"
 }
 
 compose.desktop {

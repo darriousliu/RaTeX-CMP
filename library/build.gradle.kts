@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -34,6 +35,7 @@ fun hostDesktopNativeProjectPath(): String {
     }
 }
 
+@OptIn(ExperimentalWasmDsl::class)
 kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
@@ -56,6 +58,15 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
+    }
+
+    js(IR) {
+        useEsModules()
+        browser()
+    }
+
+    wasmJs {
+        browser()
     }
 
     applyDefaultHierarchyTemplate()
@@ -82,6 +93,10 @@ kotlin {
     }
 
     sourceSets {
+        val skikoMain by creating {
+            dependsOn(commonMain.get())
+        }
+
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
@@ -96,8 +111,20 @@ kotlin {
             implementation(libs.androidx.compose.ui)
             implementation(libs.androidx.compose.ui.graphics)
         }
-        jvmMain.dependencies {
-            implementation(libs.jna)
+        jvmMain {
+            dependsOn(skikoMain)
+            dependencies {
+                implementation(libs.jna)
+            }
+        }
+        iosMain {
+            dependsOn(skikoMain)
+        }
+        webMain {
+            dependsOn(skikoMain)
+            dependencies {
+                implementation(npm("ratex-wasm", "0.1.4"))
+            }
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

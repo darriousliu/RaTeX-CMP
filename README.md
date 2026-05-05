@@ -8,7 +8,7 @@
 ✨ RaTeX-CMP 是一个面向多端 UI 场景的数学公式渲染项目，基于 Kotlin Multiplatform 与
 Compose Multiplatform 构建。核心渲染能力由 [RaTeX](https://github.com/erweixin/RaTeX) 提供。
 
-让同一套公式渲染能力可以在 Android、iOS 和 JVM Desktop 上复用，方便在Compose
+让同一套公式渲染能力可以在 Android、iOS、JVM Desktop、JS 和 Wasm 上复用，方便在Compose
 Multiplatform跨平台应用里统一接入数学排版与展示能力。
 
 这个仓库以独立项目的方式维护，既适合作为库继续演进，也适合作为示例工程和集成参考来使用。
@@ -20,6 +20,7 @@ Multiplatform跨平台应用里统一接入数学排版与展示能力。
 | Android     | `arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`                          | `x86` 目前未测试                          |
 | iOS         | iPhone / Simulator                                                   | 通过 Kotlin Multiplatform Framework 集成 |
 | JVM Desktop | Windows `x86_64`, macOS `x86_64` / `arm64`, Linux `x86_64` / `arm64` | Desktop native 库按当前机器支持的平台构建与发布      |
+| Web         | `js(IR)`, `wasmJs`                                                    | 两个平台共享 `webMain`，通过 `ratex-wasm` npm 包加载 WASM |
 
 ## 📷 平台截图
 
@@ -188,6 +189,8 @@ fun InlineFormulaSample(latex: String) {
 }
 ```
 
+注意：JS/Wasm 浏览器端需要异步初始化 WASM，首次解析请优先使用 `rememberRaTeXDisplayList` / `RaTeX(latex = ...)` 这类 suspend 路径；`rememberBlockingRaTeXDisplayList` 更适合 Android、iOS 和 JVM Desktop。
+
 ### 5. 主要参数说明
 
 - `latex`：要渲染的 LaTeX 公式字符串
@@ -201,7 +204,7 @@ fun InlineFormulaSample(latex: String) {
 
 - `library`：核心库模块
 - `desktop-native/*`：JVM Desktop native 库发布模块
-- `example`：共享示例模块，包含 Desktop 运行入口和新的 `RaTeXShowcasePage`
+- `example`：共享示例模块，包含 Desktop、JS/Wasm 运行入口和新的 `RaTeXShowcasePage`
 - `androidApp`：Android 示例应用
 - `iosApp`：iOS 示例工程
 - `build-logic`：共享 Gradle 约定插件，封装 Desktop native 发布逻辑
@@ -317,6 +320,13 @@ Windows 下可以使用：
 
 iOS 开发建议在 macOS 上打开 `iosApp/iosApp.xcodeproj` 进行调试。
 
+Web 示例：
+
+```bash
+./gradlew :example:jsBrowserDevelopmentRun
+./gradlew :example:wasmJsBrowserDevelopmentRun
+```
+
 ### 6. 开发建议
 
 - 优先在当前仓库内完成 Compose UI、Kotlin API 和示例工程相关开发
@@ -343,6 +353,13 @@ git submodule update --init --recursive
 
 ```bash
 ./gradlew :androidApp:assembleDebug
+```
+
+运行 Web 示例：
+
+```bash
+./gradlew :example:jsBrowserDevelopmentRun
+./gradlew :example:wasmJsBrowserDevelopmentRun
 ```
 
 准备 Android Rust 产物：

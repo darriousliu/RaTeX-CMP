@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import io.ratex.DisplayItem
 import io.ratex.RaTeXFontLoader
+import io.ratex.toCodePointString
 import org.jetbrains.skia.Font
 import org.jetbrains.skia.FontEdging
 import org.jetbrains.skia.Paint
@@ -22,9 +23,8 @@ internal actual fun DrawScope.drawPlatformGlyph(
     fontSizePx: Float,
 ) {
     val codePoint = glyph.charCode
-    if (!Character.isValidCodePoint(codePoint)) return
+    val text = codePoint.toCodePointString() ?: return
     val typeface = RaTeXFontLoader.getPlatformTypeFace(glyph.font, codePoint) ?: return
-    val text = String(Character.toChars(codePoint))
     val font = Font(typeface, fontSizePx * glyph.scale.toFloat()).apply {
         edging = FontEdging.SUBPIXEL_ANTI_ALIAS
         isSubpixel = true

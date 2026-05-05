@@ -49,6 +49,9 @@ private val showcaseInlineParagraphs = listOf(
     """The golden ratio $\varphi = \frac{1+\sqrt{5}}{2}$ satisfies $\varphi^2 = \varphi + 1$.""",
     $$"""If $A = \begin{pmatrix} a & b \\ c & d \end{pmatrix}$, then $\det A = ad - bc$.""",
     """中文：勾股定理是 $\text{勾股定理：} a^2+b^2=c^2$。""",
+    """行内中文：平均速度是 $\frac{\text{路程}}{\text{时间}}=\text{速度}$。""",
+    """CJK fallback：$\text{中文かな한글} + x^2$ keeps inline size stable.""",
+    """Emoji fallback：$\text{状态 ✅ ⭐ 😊} + n = 3$ stays baseline-aligned.""",
 )
 
 private val showcaseBlockSamples = listOf(
@@ -67,6 +70,22 @@ private val showcaseBlockSamples = listOf(
     ShowcaseBlockSample(
         label = """Residue theorem · \operatorname""",
         latex = """\oint_C f(z)\,dz = 2\pi i \sum_k \operatorname{Res}(f,z_k)""",
+    ),
+    ShowcaseBlockSample(
+        label = """CJK text · \text""",
+        latex = """\text{中文公式：} E = mc^2,\quad \text{半径} = r,\quad \text{面积} = \pi r^2""",
+    ),
+    ShowcaseBlockSample(
+        label = "CJK fraction labels",
+        latex = """\frac{\text{路程}}{\text{时间}} = \text{速度},\qquad \frac{\text{质量}}{\text{体积}} = \text{密度}""",
+    ),
+    ShowcaseBlockSample(
+        label = "Mixed CJK scripts",
+        latex = """\text{中文：函数}\ f(x)=x^2,\quad \text{かな：せきぶん}\ \int_0^1 x\,dx=\frac{1}{2}""",
+    ),
+    ShowcaseBlockSample(
+        label = "Emoji fallback",
+        latex = """\text{状态：✅ 成功，⭐ 收藏，😊 反馈}\quad x+y=z""",
     ),
 )
 
@@ -138,6 +157,7 @@ private fun InlineMathText(
     mathFontSize: TextUnit = 18.sp,
 ) {
     val density = LocalDensity.current
+    val textFontFamily = rememberExampleTextFontFamily()
     val inlineContent = remember { linkedMapOf<String, InlineTextContent>() }
     inlineContent.clear()
     val annotatedText = rememberInlineMathAnnotatedString(
@@ -153,6 +173,7 @@ private fun InlineMathText(
             fontSize = 16.sp,
             lineHeight = 28.8.sp,
             color = Color.Black.copy(alpha = 0.87f),
+            fontFamily = textFontFamily,
         ),
         inlineContent = inlineContent,
     )
@@ -179,9 +200,10 @@ private fun rememberInlineMathAnnotatedString(
                 latex = part,
                 displayMode = false,
             )
+            val displayList = parseResult.getOrNull()
             val fontSizePx = with(density) { mathFontSize.toPx() }
-            val measured = remember(parseResult, fontSizePx) {
-                parseResult.getOrNull()?.measure(fontSizePx)
+            val measured = remember(displayList, fontSizePx) {
+                displayList?.measure(fontSizePx)
             }
             val width = with(density) { (measured?.widthPx ?: fontSizePx).toSp() }
             val height = with(density) { (measured?.totalHeightPx ?: fontSizePx).toSp() }
@@ -198,7 +220,7 @@ private fun rememberInlineMathAnnotatedString(
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     RaTeX(
-                        displayList = parseResult.getOrNull(),
+                        displayList = displayList,
                         fontSize = mathFontSize,
                     )
                 }

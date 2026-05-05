@@ -1,6 +1,7 @@
 package io.ratex
 
 import android.graphics.Typeface
+import android.graphics.Paint
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
@@ -19,6 +20,13 @@ internal actual fun decodePlatformTypeFace(fontId: String, bytes: ByteArray): Pl
         deleteOnExit()
     }
     return Typeface.createFromFile(fontFile)
+}
+
+internal actual fun platformTypeFaceSupports(typeFace: PlatformTypeFace, charCode: Int): Boolean {
+    val text = charCode.toCodePointString() ?: return false
+    return Paint().apply {
+        typeface = typeFace
+    }.hasGlyph(text)
 }
 
 internal actual fun resolvePlatformFallbackTypeFace(

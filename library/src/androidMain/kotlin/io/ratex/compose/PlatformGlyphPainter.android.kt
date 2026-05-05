@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import io.ratex.DisplayItem
 import io.ratex.RaTeXFontLoader
+import io.ratex.toCodePointString
 
 val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
     isAntiAlias = true
@@ -18,9 +19,8 @@ internal actual fun DrawScope.drawPlatformGlyph(
     fontSizePx: Float,
 ) {
     val codePoint = glyph.charCode
-    if (!Character.isValidCodePoint(codePoint)) return
+    val text = codePoint.toCodePointString() ?: return
     val typeface = RaTeXFontLoader.getPlatformTypeFace(glyph.font, codePoint) ?: return
-    val text = String(Character.toChars(codePoint))
     drawIntoCanvas { canvas ->
         textPaint.typeface = typeface
         textPaint.textSize = fontSizePx * glyph.scale.toFloat()
