@@ -123,10 +123,20 @@ object RaTeXFontLoader {
             platformTypeFaceSupports(typeFace, codePoint)
         }?.let { return it }
 
+        registeredFallbackFontIds(fontId).forEach { fallbackFontId ->
+            FontCache[fallbackFontId]?.takeIf { typeFace ->
+                platformTypeFaceSupports(typeFace, codePoint)
+            }?.let { return it }
+        }
+
+        FontCache.getSystemFallback(fontId, codePoint)?.let { return it }
+
         return resolvePlatformFallbackTypeFace(
             fontId = fontId,
             charCode = codePoint,
-        )
+        )?.also { typeFace ->
+            FontCache.addSystemFallback(fontId, typeFace)
+        }
     }
 
     @JvmStatic
@@ -180,3 +190,10 @@ private fun fallbackCodePoint(fontId: String, charCode: Int?): Int {
 
 private fun Int.isValidUnicodeCodePoint(): Boolean =
     this in 0..0x10FFFF && this !in 0xD800..0xDFFF
+
+private fun registeredFallbackFontIds(fontId: String): List<String> = when (fontId) {
+    FONT_ID_CJK_REGULAR -> listOf(FONT_ID_CJK_FALLBACK, FONT_ID_EMOJI_FALLBACK)
+    FONT_ID_CJK_FALLBACK -> listOf(FONT_ID_EMOJI_FALLBACK, FONT_ID_CJK_REGULAR)
+    FONT_ID_EMOJI_FALLBACK -> listOf(FONT_ID_CJK_FALLBACK, FONT_ID_CJK_REGULAR)
+    else -> emptyList()
+}
