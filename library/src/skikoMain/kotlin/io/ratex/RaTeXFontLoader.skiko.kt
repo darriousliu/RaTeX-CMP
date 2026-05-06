@@ -19,6 +19,19 @@ internal actual fun decodePlatformTypeFace(fontId: String, bytes: ByteArray): Pl
 internal actual fun platformTypeFaceSupports(typeFace: PlatformTypeFace, charCode: Int): Boolean =
     typeFace.supports(charCode)
 
+internal actual fun resolvePlatformFallbackTypeFace(
+    fontId: String,
+    charCode: Int,
+): PlatformTypeFace? {
+    if (!isUnicodeFallbackFontId(fontId)) return null
+    val cacheKey = systemFallbackFontCacheKey(fontId, charCode)
+    FontCache[cacheKey]?.let { return it }
+
+    val typeFace = findSystemFallbackTypeFace(fontId, charCode) ?: return null
+    FontCache[cacheKey] = typeFace
+    return typeFace
+}
+
 internal fun findSystemFallbackTypeFace(
     fontId: String,
     charCode: Int,
@@ -102,6 +115,9 @@ private fun fallbackLocales(fontId: String): Array<String> = when (fontId) {
     FONT_ID_CJK_FALLBACK -> arrayOf("en", "zh-Hans")
     else -> arrayOf("zh-Hans", "zh-Hant", "ja", "ko", "en")
 }
+
+private fun systemFallbackFontCacheKey(fontId: String, charCode: Int): String =
+    "ratex-system-fallback:$fontId:$charCode"
 
 private fun PlatformTypeFace.supports(charCode: Int): Boolean =
     runCatching { getUTF32Glyph(charCode).toInt() != 0 }.getOrDefault(false)

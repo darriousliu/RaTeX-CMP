@@ -2,21 +2,6 @@ package io.ratex
 
 import java.util.concurrent.ConcurrentHashMap
 
-private val systemFallbackCache = ConcurrentHashMap<String, PlatformTypeFace>()
-
-internal actual fun resolvePlatformFallbackTypeFace(
-    fontId: String,
-    charCode: Int,
-): PlatformTypeFace? {
-    if (!isUnicodeFallbackFontId(fontId)) return null
-    val cacheKey = "$fontId:$charCode"
-    systemFallbackCache[cacheKey]?.let { return it }
-
-    val typeFace = findSystemFallbackTypeFace(fontId, charCode) ?: return null
-    systemFallbackCache[cacheKey] = typeFace
-    return typeFace
-}
-
 internal actual object FontCache {
     private val cache = ConcurrentHashMap<String, PlatformTypeFace>()
 
@@ -30,6 +15,5 @@ internal actual object FontCache {
 
     actual fun clear() {
         cache.clear()
-        systemFallbackCache.clear()
     }
 }
