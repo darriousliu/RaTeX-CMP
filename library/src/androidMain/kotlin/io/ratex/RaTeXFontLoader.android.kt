@@ -51,6 +51,12 @@ internal actual object FontCache {
         cache[fontId] = typeFace
     }
 
+    actual fun getSystemFallback(fontId: String, charCode: Int): PlatformTypeFace? {
+        return null
+    }
+
+    actual fun addSystemFallback(fontId: String, typeFace: PlatformTypeFace) = Unit
+
     actual fun clear() {
         cache.clear()
     }

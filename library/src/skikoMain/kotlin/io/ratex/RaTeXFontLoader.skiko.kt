@@ -24,11 +24,10 @@ internal actual fun resolvePlatformFallbackTypeFace(
     charCode: Int,
 ): PlatformTypeFace? {
     if (!isUnicodeFallbackFontId(fontId)) return null
-    val cacheKey = systemFallbackFontCacheKey(fontId, charCode)
-    FontCache[cacheKey]?.let { return it }
+    FontCache.getSystemFallback(fontId, charCode)?.let { return it }
 
     val typeFace = findSystemFallbackTypeFace(fontId, charCode) ?: return null
-    FontCache[cacheKey] = typeFace
+    FontCache.addSystemFallback(fontId, typeFace)
     return typeFace
 }
 
@@ -115,9 +114,6 @@ private fun fallbackLocales(fontId: String): Array<String> = when (fontId) {
     FONT_ID_CJK_FALLBACK -> arrayOf("en", "zh-Hans")
     else -> arrayOf("zh-Hans", "zh-Hant", "ja", "ko", "en")
 }
-
-private fun systemFallbackFontCacheKey(fontId: String, charCode: Int): String =
-    "ratex-system-fallback:$fontId:$charCode"
 
 private fun PlatformTypeFace.supports(charCode: Int): Boolean =
     runCatching { getUTF32Glyph(charCode).toInt() != 0 }.getOrDefault(false)

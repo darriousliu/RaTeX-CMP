@@ -152,6 +152,8 @@ internal expect fun resolvePlatformFallbackTypeFace(
 internal expect object FontCache {
     operator fun get(fontId: String): PlatformTypeFace?
     operator fun set(fontId: String, typeFace: PlatformTypeFace)
+    fun getSystemFallback(fontId: String, charCode: Int): PlatformTypeFace?
+    fun addSystemFallback(fontId: String, typeFace: PlatformTypeFace)
     fun clear()
 }
 
