@@ -116,15 +116,16 @@ object RaTeXFontLoader {
         fontId: String,
         charCode: Int? = null,
     ): PlatformTypeFace? {
-        FontCache[fontId]?.let { typeFace ->
-            if (!isUnicodeFallbackFontId(fontId)) return typeFace
-            val codePoint = fallbackCodePoint(fontId, charCode)
-            if (platformTypeFaceSupports(typeFace, codePoint)) return typeFace
-        }
-        if (!isUnicodeFallbackFontId(fontId)) return null
+        if (!isUnicodeFallbackFontId(fontId)) return FontCache[fontId]
+
+        val codePoint = fallbackCodePoint(fontId, charCode)
+        FontCache[fontId]?.takeIf { typeFace ->
+            platformTypeFaceSupports(typeFace, codePoint)
+        }?.let { return it }
+
         return resolvePlatformFallbackTypeFace(
             fontId = fontId,
-            charCode = fallbackCodePoint(fontId, charCode),
+            charCode = codePoint,
         )
     }
 
