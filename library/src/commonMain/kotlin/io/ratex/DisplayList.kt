@@ -24,8 +24,8 @@ sealed class DisplayItem {
         val y: Double,
         val scale: Double,
         val font: String,
-        @SerialName("char_code") val charCode: Int,
-        val commands: List<PathCommand> = emptyList(),
+        @SerialName("char_code")
+        val charCode: Int,
         val color: RaTeXColor,
     ) : DisplayItem()
 

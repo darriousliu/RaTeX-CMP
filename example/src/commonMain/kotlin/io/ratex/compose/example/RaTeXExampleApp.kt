@@ -117,6 +117,48 @@ private val sampleFormulas = listOf(
         displayMode = true,
     ),
     FormulaSample(
+        id = "triple-integral-015",
+        title = "0.1.5 Triple Integral Metrics",
+        latex = """\displaystyle \iiint_{-\infty}^{\infty}""",
+        displayMode = true,
+    ),
+    FormulaSample(
+        id = "inline-sum-default-limits-015",
+        title = "0.1.5 Inline Sum Default Limits",
+        latex = """\sum_{n=1}^{\infty}""",
+        displayMode = false,
+    ),
+    FormulaSample(
+        id = "inline-sum-explicit-limits-015",
+        title = "0.1.5 Inline Sum Explicit Limits",
+        latex = """\sum\limits_{n=1}^{\infty}""",
+        displayMode = false,
+    ),
+    FormulaSample(
+        id = "html-style-color-015",
+        title = "0.1.5 HTML Style Color",
+        latex = """a \htmlStyle{color: red;}{+} b""",
+        displayMode = true,
+    ),
+    FormulaSample(
+        id = "html-style-middle-015",
+        title = "0.1.5 HTML Style With Middle",
+        latex = """\left( \htmlStyle{color: red;}{x \middle| y} \right)""",
+        displayMode = true,
+    ),
+    FormulaSample(
+        id = "html-style-superscript-015",
+        title = "0.1.5 HTML Style Superscript",
+        latex = """\htmlStyle{color: red;}{x}^2""",
+        displayMode = true,
+    ),
+    FormulaSample(
+        id = "transparent-color-015",
+        title = "0.1.5 Transparent Color",
+        latex = """\textcolor{transparent}{x} + y""",
+        displayMode = true,
+    ),
+    FormulaSample(
         id = "long-fourier-series",
         title = "Long Fourier Expansion",
         latex = """f(x)=\frac{a_0}{2}+\sum_{n=1}^{\infty}\left(a_n\cos\left(\frac{n\pi x}{L}\right)+b_n\sin\left(\frac{n\pi x}{L}\right)\right)=\frac{1}{\pi}\int_{-\pi}^{\pi}f(t)\,dt+\sum_{n=1}^{\infty}\left(\frac{1}{\pi}\int_{-\pi}^{\pi}f(t)\cos(nt)\,dt\right)\cos(nx)+\sum_{n=1}^{\infty}\left(\frac{1}{\pi}\int_{-\pi}^{\pi}f(t)\sin(nt)\,dt\right)\sin(nx)""",

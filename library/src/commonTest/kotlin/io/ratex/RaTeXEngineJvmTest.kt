@@ -27,6 +27,88 @@ class RaTeXEngineJvmTest {
     }
 
     @Test
+    fun parse_0_1_5_regression_formulas() {
+        val formulas = listOf(
+            """\displaystyle \iiint_{-\infty}^{\infty}""",
+            """\textstyle\sum_{n=1}^{\infty}""",
+            """\textstyle\sum\limits_{n=1}^{\infty}""",
+            """\left( \htmlStyle{color: red;}{x \middle| y} \right)""",
+            """\htmlStyle{color: red;}{x}^2""",
+            """a \htmlStyle{color: red;}{+} b""",
+        )
+
+        formulas.forEach { latex ->
+            val displayList = RaTeXEngine.parseBlocking(latex, displayMode = true)
+            assertTrue(displayList.items.isNotEmpty(), "Expected parsed items for $latex")
+        }
+    }
+
+    @Test
+    fun inline_explicit_limits_change_formula_metrics() {
+        val defaultLimits = RaTeXEngine.parseBlocking(
+            latex = """\sum_{n=1}^{\infty}""",
+            displayMode = false,
+        )
+        val explicitLimits = RaTeXEngine.parseBlocking(
+            latex = """\sum\limits_{n=1}^{\infty}""",
+            displayMode = false,
+        )
+
+        assertTrue(
+            explicitLimits.height > defaultLimits.height + 0.5,
+            "Expected explicit inline limits to increase height: default=${defaultLimits.height}, explicit=${explicitLimits.height}",
+        )
+        assertTrue(
+            explicitLimits.depth > defaultLimits.depth + 0.5,
+            "Expected explicit inline limits to increase depth: default=${defaultLimits.depth}, explicit=${explicitLimits.depth}",
+        )
+    }
+
+    @Test
+    fun html_style_emits_styled_display_items() {
+        val displayList = RaTeXEngine.parseBlocking(
+            latex = """\htmlStyle{color: blue; background-color: yellow; text-decoration: underline;}{x}""",
+            displayMode = true,
+        )
+
+        assertTrue(
+            displayList.items.any { item ->
+                val glyph = item as? DisplayItem.GlyphPath
+                glyph?.color?.b == 1f && glyph.color.r == 0f && glyph.color.g == 0f
+            },
+            "Expected blue glyph from htmlStyle color",
+        )
+        assertTrue(
+            displayList.items.any { item ->
+                val rect = item as? DisplayItem.Rect
+                rect?.color?.r == 1f && rect.color.g == 1f && rect.color.b == 0f
+            },
+            "Expected yellow background rect from htmlStyle background-color",
+        )
+        assertTrue(
+            displayList.items.any { item ->
+                val line = item as? DisplayItem.Line
+                line?.color?.b == 1f && line.color.r == 0f && line.color.g == 0f
+            },
+            "Expected blue underline from htmlStyle text-decoration",
+        )
+    }
+
+    @Test
+    fun transparent_color_decodes_alpha() {
+        val displayList = RaTeXEngine.parseBlocking(
+            latex = """\textcolor{transparent}{x} + y""",
+            displayMode = true,
+        )
+
+        val glyphColors = displayList.items
+            .mapNotNull { item -> (item as? DisplayItem.GlyphPath)?.color }
+
+        assertTrue(glyphColors.any { it.a == 0f }, "Expected transparent color alpha")
+        assertTrue(glyphColors.any { it.a == 1f }, "Expected opaque glyphs outside transparent group")
+    }
+
+    @Test
     fun parse_respects_color_without_overriding_explicit_latex_color() {
         val displayList = RaTeXEngine.parseBlocking(
             latex = """x + \color{red}{y}""",

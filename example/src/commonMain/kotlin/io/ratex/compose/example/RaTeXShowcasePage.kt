@@ -87,6 +87,34 @@ private val showcaseBlockSamples = listOf(
         label = "Emoji fallback",
         latex = """\text{状态：✅ 成功，⭐ 收藏，😊 反馈}\quad x+y=z""",
     ),
+    ShowcaseBlockSample(
+        label = "0.1.5 triple integral metrics",
+        latex = """\displaystyle \iiint_{-\infty}^{\infty}""",
+    ),
+    ShowcaseBlockSample(
+        label = "0.1.5 inline sum default limits",
+        latex = """\sum_{n=1}^{\infty}""",
+    ),
+    ShowcaseBlockSample(
+        label = "0.1.5 inline sum explicit limits",
+        latex = """\sum\limits_{n=1}^{\infty}""",
+    ),
+    ShowcaseBlockSample(
+        label = "0.1.5 htmlStyle color",
+        latex = """a \htmlStyle{color: red;}{+} b""",
+    ),
+    ShowcaseBlockSample(
+        label = "0.1.5 htmlStyle with middle",
+        latex = """\left( \htmlStyle{color: red;}{x \middle| y} \right)""",
+    ),
+    ShowcaseBlockSample(
+        label = "0.1.5 htmlStyle superscript",
+        latex = """\htmlStyle{color: red;}{x}^2""",
+    ),
+    ShowcaseBlockSample(
+        label = "0.1.5 transparent color",
+        latex = """\textcolor{transparent}{x} + y""",
+    ),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
