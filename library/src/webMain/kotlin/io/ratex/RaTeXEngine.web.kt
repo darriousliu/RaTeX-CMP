@@ -4,7 +4,6 @@ package io.ratex
 
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.await
 import kotlinx.coroutines.withContext
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.JsAny
@@ -19,7 +18,7 @@ actual object RaTeXEngine {
         if (initialized) return
         val promise = initPromise ?: initRatex().also { initPromise = it }
         try {
-            promise.await<JsAny?>()
+            promise.await()
             initialized = true
         } catch (error: Throwable) {
             if (initPromise === promise) {
@@ -66,6 +65,8 @@ actual object RaTeXEngine {
         }
     }
 }
+
+internal expect suspend fun <T : JsAny?> Promise<T>.await(): T
 
 private fun Color.toRatexCssColor(): String {
     val red = (red.coerceIn(0f, 1f) * 255f).roundToInt().toString(16).padStart(2, '0')
