@@ -44,6 +44,25 @@ class RaTeXEngineJvmTest {
     }
 
     @Test
+    fun parse_0_1_8_regression_formulas() {
+        val formulas = listOf(
+            "a \u00B7 b",
+            "\u222B_0^1 x\\,dx",
+            "\u222C_D f(x,y)\\,dx\\,dy",
+            """\text{\sout{removed}} + x""",
+            "\u2254",
+            "\u27E6 x \u27E7",
+            "\u29B5",
+            "\u00A9 + \u00AE",
+        )
+
+        formulas.forEach { latex ->
+            val displayList = RaTeXEngine.parseBlocking(latex, displayMode = true)
+            assertTrue(displayList.items.isNotEmpty(), "Expected parsed items for $latex")
+        }
+    }
+
+    @Test
     fun inline_explicit_limits_change_formula_metrics() {
         val defaultLimits = RaTeXEngine.parseBlocking(
             latex = """\sum_{n=1}^{\infty}""",
