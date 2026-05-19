@@ -115,6 +115,18 @@ private val showcaseBlockSamples = listOf(
         label = "0.1.5 transparent color",
         latex = """\textcolor{transparent}{x} + y""",
     ),
+    ShowcaseBlockSample(
+        label = "0.1.9 proof tree unary",
+        latex = """\begin{prooftree}\AxiomC{P}\RightLabel{r}\UnaryInfC{Q}\end{prooftree}""",
+    ),
+    ShowcaseBlockSample(
+        label = "0.1.9 proof tree dashed",
+        latex = """\begin{prooftree}\AxiomC{A \fCenter B}\AxiomC{B \fCenter C}\dashedLine\BinaryInfC{A \fCenter C}\end{prooftree}""",
+    ),
+    ShowcaseBlockSample(
+        label = "0.1.9 proof tree rootAtTop",
+        latex = """\begin{prooftree}\AxiomC{P}\rootAtTop\UIC{Q}\end{prooftree}""",
+    ),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -63,6 +63,45 @@ class RaTeXEngineJvmTest {
     }
 
     @Test
+    fun parse_0_1_9_prooftree_formulas() {
+        val formulas = listOf(
+            """\begin{prooftree}\AxiomC{P}\UnaryInfC{Q}\end{prooftree}""",
+            """\begin{prooftree}\AxiomC{A \fCenter B}\RightLabel{r}\UnaryInfC{C}\end{prooftree}""",
+            """\begin{prooftree}\AxiomC{P}\AxiomC{Q}\BinaryInfC{R}\end{prooftree}""",
+            """\begin{prooftree}\AxiomC{P}\rootAtTop\UIC{Q}\end{prooftree}""",
+        )
+
+        formulas.forEach { latex ->
+            val displayList = RaTeXEngine.parseBlocking(latex, displayMode = true)
+            assertTrue(displayList.items.isNotEmpty(), "Expected parsed items for $latex")
+        }
+    }
+
+    @Test
+    fun prooftree_line_styles_decode_to_display_lines() {
+        val dashedDisplayList = RaTeXEngine.parseBlocking(
+            latex = """\begin{prooftree}\AxiomC{P}\dashedLine\UnaryInfC{Q}\end{prooftree}""",
+            displayMode = true,
+        )
+        assertTrue(
+            dashedDisplayList.items.any { item ->
+                val line = item as? DisplayItem.Line
+                line?.dashed == true
+            },
+            "Expected proof tree dashed line to decode as DisplayItem.Line(dashed = true)",
+        )
+
+        val noLineDisplayList = RaTeXEngine.parseBlocking(
+            latex = """\begin{prooftree}\AxiomC{P}\noLine\UnaryInfC{Q}\end{prooftree}""",
+            displayMode = true,
+        )
+        assertTrue(
+            noLineDisplayList.items.none { item -> item is DisplayItem.Line },
+            "Expected proof tree noLine to emit no DisplayItem.Line",
+        )
+    }
+
+    @Test
     fun inline_explicit_limits_change_formula_metrics() {
         val defaultLimits = RaTeXEngine.parseBlocking(
             latex = """\sum_{n=1}^{\infty}""",
