@@ -122,7 +122,7 @@ kotlin {
         webMain {
             dependsOn(skikoMain)
             dependencies {
-                implementation(npm("ratex-wasm", "0.1.9"))
+                implementation(npm("ratex-wasm", "0.1.11"))
             }
         }
         commonTest.dependencies {

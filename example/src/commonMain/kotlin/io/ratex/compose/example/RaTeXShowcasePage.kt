@@ -127,6 +127,14 @@ private val showcaseBlockSamples = listOf(
         label = "0.1.9 proof tree rootAtTop",
         latex = """\begin{prooftree}\AxiomC{P}\rootAtTop\UIC{Q}\end{prooftree}""",
     ),
+    ShowcaseBlockSample(
+        label = "0.1.10 vertical guard",
+        latex = """x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}""",
+    ),
+    ShowcaseBlockSample(
+        label = """0.1.11 \verb multibyte delimiter""",
+        latex = """\verbéx+yé""",
+    ),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -126,8 +126,11 @@ data class RaTeXMeasuredDisplayList(
     val totalHeightPx: Float get() = heightPx + depthPx
 }
 
+internal fun DisplayList.verticalAntialiasGuardPx(): Float =
+    if (items.isEmpty()) 0f else 1f
+
 fun DisplayList.measure(fontSizePx: Float): RaTeXMeasuredDisplayList = RaTeXMeasuredDisplayList(
     widthPx = (width * fontSizePx).toFloat(),
-    heightPx = (height * fontSizePx).toFloat(),
-    depthPx = (depth * fontSizePx).toFloat(),
+    heightPx = (height * fontSizePx).toFloat() + verticalAntialiasGuardPx(),
+    depthPx = (depth * fontSizePx).toFloat() + verticalAntialiasGuardPx(),
 )

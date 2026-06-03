@@ -20,6 +20,7 @@ import io.ratex.DisplayList
 import io.ratex.RaTeXEngine
 import io.ratex.RaTeXFontLoader
 import io.ratex.measure
+import kotlin.math.ceil
 
 @Composable
 fun rememberRaTeXDisplayList(
@@ -78,8 +79,8 @@ fun RaTeX(
     val measuredDisplayList = remember(displayList, fontSizePx) {
         displayList?.measure(fontSizePx)
     }
-    val width = with(density) { (measuredDisplayList?.widthPx ?: 0f).toDp() }
-    val height = with(density) { (measuredDisplayList?.totalHeightPx ?: 0f).toDp() }
+    val width = with(density) { (measuredDisplayList?.widthPx ?: 0f).ceilPx().toDp() }
+    val height = with(density) { (measuredDisplayList?.totalHeightPx ?: 0f).ceilPx().toDp() }
     var fontsReady by remember(displayList) { mutableStateOf(false) }
 
     LaunchedEffect(displayList) {
@@ -104,3 +105,5 @@ fun RaTeX(
         )
     }
 }
+
+private fun Float.ceilPx(): Float = ceil(toDouble()).toFloat()

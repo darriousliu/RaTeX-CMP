@@ -6,9 +6,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
 import io.ratex.DisplayItem
 import io.ratex.DisplayList
 import io.ratex.PathCommand
+import io.ratex.verticalAntialiasGuardPx
 import kotlin.math.max
 
 fun DrawScope.drawDisplayList(
@@ -16,12 +18,16 @@ fun DrawScope.drawDisplayList(
     fontSizePx: Float,
     drawGlyph: DrawScope.(DisplayItem.GlyphPath, Float) -> Unit = { _, _ -> },
 ) {
-    displayList.items.forEach { item ->
-        when (item) {
-            is DisplayItem.GlyphPath -> drawGlyph(item, fontSizePx)
-            is DisplayItem.Line -> drawDisplayLine(item, fontSizePx)
-            is DisplayItem.Rect -> drawDisplayRect(item, fontSizePx)
-            is DisplayItem.Path -> drawDisplayPath(item, fontSizePx)
+    withTransform({
+        translate(top = displayList.verticalAntialiasGuardPx())
+    }) {
+        displayList.items.forEach { item ->
+            when (item) {
+                is DisplayItem.GlyphPath -> drawGlyph(item, fontSizePx)
+                is DisplayItem.Line -> drawDisplayLine(item, fontSizePx)
+                is DisplayItem.Rect -> drawDisplayRect(item, fontSizePx)
+                is DisplayItem.Path -> drawDisplayPath(item, fontSizePx)
+            }
         }
     }
 }

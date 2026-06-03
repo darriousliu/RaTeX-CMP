@@ -2489,10 +2489,10 @@ range-parser@^1.2.1, range-parser@~1.2.1:
   resolved "https://registry.yarnpkg.com/range-parser/-/range-parser-1.2.1.tgz#3cf37023d199e1c24d1a55b84800c2f3e6468031"
   integrity sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg==
 
-ratex-wasm@0.1.9:
-  version "0.1.9"
-  resolved "https://registry.yarnpkg.com/ratex-wasm/-/ratex-wasm-0.1.9.tgz#eadd54d8156d92d579676352ef98b0ea952d0aa5"
-  integrity sha512-XLafvopNsYExC1ViB/x6W3mq6AkKVM2O/28hQO6wiEjJgWwWMtUPrU634P4AiNVaZHf9bnrI6/vGAKNNbfz81g==
+ratex-wasm@0.1.11:
+  version "0.1.11"
+  resolved "https://registry.yarnpkg.com/ratex-wasm/-/ratex-wasm-0.1.11.tgz#25eafdbe0219f96d3b87b7e6150a0cfae569fa48"
+  integrity sha512-EQkV5L1CVSgQpO6NmWd0kQaas1NqnalOymA0M6LW4+on9bd49mR+v4ntAZl74s/9mdLCC2WV0R9wjW7xrKUlVQ==
 
 raw-body@~2.5.3:
   version "2.5.3"
