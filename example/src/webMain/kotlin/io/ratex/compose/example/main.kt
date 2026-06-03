@@ -15,7 +15,8 @@ fun main() {
         runCatching {
             RaTeXEngine.initialize()
             RaTeXFontLoader.ensureLoaded()
-            preloadExampleTextFonts()
+            preloadExampleFormulaFonts()
+            preloadExampleWebEmojiFont()
         }.onFailure { error ->
             println("RaTeX web preload failed: ${error.message}")
         }

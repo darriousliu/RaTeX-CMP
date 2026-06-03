@@ -205,7 +205,6 @@ private fun InlineMathText(
     mathFontSize: TextUnit = 18.sp,
 ) {
     val density = LocalDensity.current
-    val textFontFamily = rememberExampleTextFontFamily()
     val inlineContent = remember { linkedMapOf<String, InlineTextContent>() }
     inlineContent.clear()
     val annotatedText = rememberInlineMathAnnotatedString(
@@ -221,7 +220,6 @@ private fun InlineMathText(
             fontSize = 16.sp,
             lineHeight = 28.8.sp,
             color = Color.Black.copy(alpha = 0.87f),
-            fontFamily = textFontFamily,
         ),
         inlineContent = inlineContent,
     )
