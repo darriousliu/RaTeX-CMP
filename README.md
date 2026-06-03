@@ -67,7 +67,7 @@ repositories {
 当前 KMP 主库坐标为：
 
 ```kotlin
-implementation("io.github.darriousliu:ratex:0.1.5")
+implementation("io.github.darriousliu:ratex:0.1.11")
 ```
 
 在 Kotlin Multiplatform 项目中，通常添加到 `commonMain`：
@@ -76,7 +76,7 @@ implementation("io.github.darriousliu:ratex:0.1.5")
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.5")
+            implementation("io.github.darriousliu:ratex:0.1.11")
         }
     }
 }
@@ -88,8 +88,8 @@ kotlin {
 kotlin {
     sourceSets {
         jvmMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.5")
-            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.5")
+            implementation("io.github.darriousliu:ratex:0.1.11")
+            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.11")
         }
     }
 }

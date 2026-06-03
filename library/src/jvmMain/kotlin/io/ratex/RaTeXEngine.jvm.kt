@@ -71,11 +71,15 @@ internal open class RatexResult : Structure() {
 
 internal interface RaTeXNative : Library {
     fun ratex_parse_and_layout(latex: String, opts: RatexOptions?): RatexResult.ByValue
+    fun ratex_parse_and_layout(latex: Pointer, opts: RatexOptions?): RatexResult.ByValue
     fun ratex_free_display_list(json: Pointer?)
     fun ratex_get_last_error(): String?
 
     companion object {
         private const val LIBRARY_NAME = "ratex_ffi"
+        private val LOAD_OPTIONS = mapOf(
+            Library.OPTION_STRING_ENCODING to "UTF-8",
+        )
 
         val instance: RaTeXNative by lazy {
             loadBundledOrSystem()
@@ -84,9 +88,9 @@ internal interface RaTeXNative : Library {
         private fun loadBundledOrSystem(): RaTeXNative {
             val extracted = extractBundledLibrary()
             return if (extracted != null) {
-                Native.load(extracted.absolutePath, RaTeXNative::class.java)
+                Native.load(extracted.absolutePath, RaTeXNative::class.java, LOAD_OPTIONS)
             } else {
-                Native.load(LIBRARY_NAME, RaTeXNative::class.java)
+                Native.load(LIBRARY_NAME, RaTeXNative::class.java, LOAD_OPTIONS)
             }
         }
 
