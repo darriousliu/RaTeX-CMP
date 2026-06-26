@@ -2,6 +2,7 @@ package io.ratex
 
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.runBlocking
+import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -62,6 +63,16 @@ class RaTeXEngineJvmTest {
             """\sum_{i=1}^{n}\left(\int_{0}^{1}\frac{\sum_{j=1}^{m}\left(\frac{x^{i+j}}{1+x^{2j}}\right)}{\sqrt{1+\sum_{k=1}^{r}\left(\frac{x^{2k}}{k^2}\right)}}\,dx\right)^{\!2}""" to true,
             """T(x)=\begin{cases}\begin{pmatrix}1&x&x^2\\0&1&2x\\0&0&1\end{pmatrix},&x\ge 0\\[1.2em]\begin{pmatrix}1&0&0\\-x&1&0\\x^2&-2x&1\end{pmatrix},&x<0\end{cases}""" to true,
             """e^{i\pi} + 1 = 0""" to false,
+            """\ce{CO2 + C -> 2 CO}\qquad \pu{5.3e-11 m}""" to true,
+            """\cancel{x}+\bcancel{y}+\xcancel{z}\qquad \overbrace{a+b+\cdots+z}^{26}""" to true,
+            """E = mc^2 \tag{1}""" to true,
+            """\begin{array}{c:c} a & b \\ \hdashline c & d \end{array}""" to true,
+            """\mathbb{R}\quad \mathcal{F}\quad \mathfrak{g}\quad \mathsf{ABC}\quad \mathtt{code}""" to true,
+            """\textcolor{#1565c0}{blue}\quad \color{orange}{orange}\quad \textcolor[RGB]{178,34,34}{firebrick}""" to true,
+            """\begin{align} a&=b+c\nonumber\\ d&=e+f \end{align}""" to true,
+            """\textcolor{#1565c0}{\text{status ✅ ⭐ 😊}}\quad x+y=z""" to true,
+            """a \coloneqq b\qquad \llbracket x \rrbracket\qquad x \nshortmid y""" to true,
+            """\textstyle \sum_{n=1}^{\infty}\frac{1}{n^2}=\frac{\pi^2}{6}""" to true,
         )
 
         formulas.forEach { (latex, displayMode) ->
@@ -142,10 +153,29 @@ class RaTeXEngineJvmTest {
         val error = assertFailsWith<RaTeXException> {
             RaTeXEngine.parseBlocking(latex, displayMode = true)
         }
-        assertTrue(
-            error.message?.contains("Recursion limit exceeded") == true,
-            "Expected recursion limit error, got: ${error.message}",
+        assertEquals(
+            error.message?.contains("Recursion limit exceeded"),
+            true,
+            "Expected recursion limit error, got: ${error.message}"
         )
+    }
+
+    @Test
+    fun parse_0_1_12_regression_formulas() {
+        val formulas = listOf(
+            """\textcolor{#ff000080}{x} + y""",
+            """\textcolor{#f008}{x} + y""",
+            """a\dotsc,b""",
+            """a\dotsc;b""",
+            """\href{https://example.com}{x}""",
+            """\left( \html@mathml{x \middle| y}{x} \right)""",
+            """x\widetilde{x}""",
+        )
+
+        formulas.forEach { latex ->
+            val displayList = RaTeXEngine.parseBlocking(latex, displayMode = true)
+            assertTrue(displayList.items.isNotEmpty(), "Expected parsed items for $latex")
+        }
     }
 
     @Test
@@ -238,6 +268,91 @@ class RaTeXEngineJvmTest {
     }
 
     @Test
+    fun parse_0_1_12_hex_rgba_colors_decode_alpha() {
+        val longHex = RaTeXEngine.parseBlocking(
+            latex = """\textcolor{#ff000080}{x} + y""",
+            displayMode = true,
+        )
+        val shortHex = RaTeXEngine.parseBlocking(
+            latex = """\textcolor{#f008}{x} + y""",
+            displayMode = true,
+        )
+
+        val longHexColor = longHex.glyphColors().first { it.a < 1f }
+        val shortHexColor = shortHex.glyphColors().first { it.a < 1f }
+
+        assertFloatClose(128f / 255f, longHexColor.a, "Expected #rrggbbaa alpha to decode")
+        assertFloatClose(136f / 255f, shortHexColor.a, "Expected #rgba alpha to decode")
+    }
+
+    @Test
+    fun parse_0_1_12_dotsc_spacing_depends_on_following_punctuation() {
+        val dotscBeforeComma = RaTeXEngine.parseBlocking("""a\dotsc,b""", displayMode = true)
+        val ldotsBeforeComma = RaTeXEngine.parseBlocking("""a\ldots,b""", displayMode = true)
+        val dotscBeforeSemicolon = RaTeXEngine.parseBlocking("""a\dotsc;b""", displayMode = true)
+        val ldotsBeforeSemicolon = RaTeXEngine.parseBlocking("""a\ldots;b""", displayMode = true)
+
+        assertDoubleClose(
+            ldotsBeforeComma.width,
+            dotscBeforeComma.width,
+            "Expected \\dotsc before comma not to add extra thin space",
+        )
+        assertTrue(
+            dotscBeforeSemicolon.width > ldotsBeforeSemicolon.width + 0.05,
+            "Expected \\dotsc before semicolon to add thin space: dotsc=${dotscBeforeSemicolon.width}, ldots=${ldotsBeforeSemicolon.width}",
+        )
+    }
+
+    @Test
+    fun parse_0_1_12_href_keeps_link_underline() {
+        val displayList = RaTeXEngine.parseBlocking(
+            latex = """\href{https://example.com}{x}""",
+            displayMode = true,
+        )
+
+        assertTrue(
+            displayList.items.any { item ->
+                val line = item as? DisplayItem.Line
+                line?.color?.b == 1f && line.color.r == 0f && line.color.g == 0f
+            },
+            "Expected href body to emit a blue underline line",
+        )
+    }
+
+    @Test
+    fun parse_0_1_12_htmlmathml_middle_branch_renders_delimiter() {
+        val plain = RaTeXEngine.parseBlocking(
+            latex = """\left( x \middle| y \right)""",
+            displayMode = true,
+        )
+        val wrapped = RaTeXEngine.parseBlocking(
+            latex = """\left( \html@mathml{x \middle| y}{x} \right)""",
+            displayMode = true,
+        )
+
+        assertEquals(
+            plain.items.size,
+            wrapped.items.size,
+            "Expected html@mathml html branch to render the current-pass middle delimiter",
+        )
+    }
+
+    @Test
+    fun parse_0_1_12_widetilde_path_stays_inside_display_width() {
+        val displayList = RaTeXEngine.parseBlocking(
+            latex = """x\widetilde{x}""",
+            displayMode = true,
+        )
+        val maxPathX = displayList.maxPathX()
+
+        assertTrue(maxPathX.isFinite(), "Expected widetilde to emit a path")
+        assertTrue(
+            maxPathX <= displayList.width + 0.002,
+            "Expected widetilde path to stay inside display width: maxPathX=$maxPathX, width=${displayList.width}",
+        )
+    }
+
+    @Test
     fun parse_respects_color_without_overriding_explicit_latex_color() {
         val displayList = RaTeXEngine.parseBlocking(
             latex = """x + \color{red}{y}""",
@@ -280,5 +395,44 @@ class RaTeXEngineJvmTest {
                 "Expected a platform typeface for $FONT_ID_CJK_REGULAR",
             )
         }
+    }
+
+    private fun DisplayList.glyphColors(): List<RaTeXColor> =
+        items.mapNotNull { item -> (item as? DisplayItem.GlyphPath)?.color }
+
+    private fun DisplayList.maxPathX(): Double {
+        var maxPathX = Double.NEGATIVE_INFINITY
+        items.forEach { item ->
+            val path = item as? DisplayItem.Path ?: return@forEach
+            path.commands.forEach { command ->
+                when (command) {
+                    is PathCommand.MoveTo -> maxPathX = maxOf(maxPathX, path.x + command.x)
+                    is PathCommand.LineTo -> maxPathX = maxOf(maxPathX, path.x + command.x)
+                    is PathCommand.CubicTo -> {
+                        maxPathX = maxOf(
+                            maxPathX,
+                            path.x + command.x1,
+                            path.x + command.x2,
+                            path.x + command.x,
+                        )
+                    }
+
+                    is PathCommand.QuadTo -> {
+                        maxPathX = maxOf(maxPathX, path.x + command.x1, path.x + command.x)
+                    }
+
+                    PathCommand.Close -> Unit
+                }
+            }
+        }
+        return maxPathX
+    }
+
+    private fun assertFloatClose(expected: Float, actual: Float, message: String) {
+        assertTrue(abs(expected - actual) < 0.01f, "$message: expected=$expected, actual=$actual")
+    }
+
+    private fun assertDoubleClose(expected: Double, actual: Double, message: String) {
+        assertTrue(abs(expected - actual) < 0.002, "$message: expected=$expected, actual=$actual")
     }
 }

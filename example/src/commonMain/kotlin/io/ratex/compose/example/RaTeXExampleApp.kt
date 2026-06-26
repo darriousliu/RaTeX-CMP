@@ -19,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +28,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,31 +46,27 @@ import io.ratex.DisplayList
 import io.ratex.compose.RaTeX
 import io.ratex.compose.rememberRaTeXDisplayList
 import io.ratex.measure
-import kotlin.random.Random
 
-fun randomComposeColor(
-    min: Float = 0.2f,
-    max: Float = 0.8f,
-    alpha: Float = 1f
-): Color {
-    fun r() = Random.nextFloat() * (max - min) + min
-    return Color(
-        red = r(),
-        green = r(),
-        blue = r(),
-        alpha = alpha.coerceIn(0f, 1f)
-    )
-}
+//fun randomComposeColor(
+//    min: Float = 0.2f,
+//    max: Float = 0.8f,
+//    alpha: Float = 1f
+//): Color {
+//    fun r() = Random.nextFloat() * (max - min) + min
+//    return Color(
+//        red = r(),
+//        green = r(),
+//        blue = r(),
+//        alpha = alpha.coerceIn(0f, 1f)
+//    )
+//}
 
 private data class FormulaSample(
     val id: String,
     val title: String,
     val latex: String,
     val displayMode: Boolean,
-) {
-    val color: Color
-        get() = randomComposeColor()
-}
+)
 
 private val sampleFormulas = listOf(
     FormulaSample(
@@ -156,6 +151,36 @@ private val sampleFormulas = listOf(
         id = "transparent-color-015",
         title = "0.1.5 Transparent Color",
         latex = """\textcolor{transparent}{x} + y""",
+        displayMode = true,
+    ),
+    FormulaSample(
+        id = "hex-rgba-color-012",
+        title = "0.1.12 Hex RGBA Color",
+        latex = """\textcolor{#ff000080}{x} + \textcolor{#f008}{y} + z""",
+        displayMode = true,
+    ),
+    FormulaSample(
+        id = "dotsc-punctuation-012",
+        title = "0.1.12 Dotsc Punctuation",
+        latex = """a\dotsc,b\quad a\dotsc;b""",
+        displayMode = true,
+    ),
+    FormulaSample(
+        id = "href-underline-012",
+        title = "0.1.12 Href Underline",
+        latex = """\href{https://example.com}{x+y=z}""",
+        displayMode = true,
+    ),
+    FormulaSample(
+        id = "htmlmathml-middle-012",
+        title = "0.1.12 HtmlMathMl Middle",
+        latex = """\left( \html@mathml{x \middle| y}{x} \right)""",
+        displayMode = true,
+    ),
+    FormulaSample(
+        id = "widetilde-path-012",
+        title = "0.1.12 Widetilde Path Bounds",
+        latex = """x\widetilde{x}""",
         displayMode = true,
     ),
     FormulaSample(

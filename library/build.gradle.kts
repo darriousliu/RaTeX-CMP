@@ -1,5 +1,5 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -122,7 +122,7 @@ kotlin {
         webMain {
             dependsOn(skikoMain)
             dependencies {
-                implementation(npm("ratex-wasm", "0.1.11"))
+                implementation(npm("ratex-wasm", "0.1.12"))
             }
         }
         commonTest.dependencies {

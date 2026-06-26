@@ -7,7 +7,7 @@
   resolved "https://registry.yarnpkg.com/@js-joda/core/-/core-3.2.0.tgz#3e61e21b7b2b8a6be746df1335cf91d70db2a273"
   integrity sha512-PMqgJ0sw5B7FKb2d5bWYIoxjri+QlW/Pys7+Rw82jSH0QN3rB05jZ/VrrsUdh1w4+i2kw9JOejXGq/KhDOX7Kg==
 
-ratex-wasm@0.1.11:
-  version "0.1.11"
-  resolved "https://registry.yarnpkg.com/ratex-wasm/-/ratex-wasm-0.1.11.tgz#25eafdbe0219f96d3b87b7e6150a0cfae569fa48"
-  integrity sha512-EQkV5L1CVSgQpO6NmWd0kQaas1NqnalOymA0M6LW4+on9bd49mR+v4ntAZl74s/9mdLCC2WV0R9wjW7xrKUlVQ==
+ratex-wasm@0.1.12:
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/ratex-wasm/-/ratex-wasm-0.1.12.tgz#1404f2ae121a05421b00d04b23cf32ca5db54b2b"
+  integrity sha512-Hb3epSHfocYrqNooSJCNM+unQSQf4jg2Hq80dR828nV2JClwY22EG1coVTl+so1iHBGuWXIXlr5xgypAg116nw==

@@ -72,5 +72,6 @@ private fun Color.toRatexCssColor(): String {
     val red = (red.coerceIn(0f, 1f) * 255f).roundToInt().toString(16).padStart(2, '0')
     val green = (green.coerceIn(0f, 1f) * 255f).roundToInt().toString(16).padStart(2, '0')
     val blue = (blue.coerceIn(0f, 1f) * 255f).roundToInt().toString(16).padStart(2, '0')
-    return "#$red$green$blue"
+    val alphaHex = (alpha.coerceIn(0f, 1f) * 255f).roundToInt().toString(16).padStart(2, '0')
+    return "#$red$green$blue$alphaHex"
 }
