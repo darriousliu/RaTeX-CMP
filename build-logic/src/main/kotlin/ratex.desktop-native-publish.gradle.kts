@@ -1,14 +1,5 @@
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import io.ratex.buildlogic.RaTeXDesktopNativeExtension
-import org.gradle.api.Action
-import org.gradle.api.Project
-import org.gradle.api.publish.maven.MavenPom
-import org.gradle.api.tasks.Exec
-import org.gradle.kotlin.dsl.configure
-import org.gradle.kotlin.dsl.create
-import org.gradle.kotlin.dsl.named
-import org.gradle.kotlin.dsl.register
-import org.gradle.language.jvm.tasks.ProcessResources
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
@@ -17,8 +8,8 @@ plugins {
     id("com.vanniktech.maven.publish")
 }
 
-group = properties["group"].toString()
-version = properties["version"].toString()
+group = findProperty("group").toString()
+version = findProperty("version").toString()
 
 extensions.configure<KotlinJvmProjectExtension> {
     jvmToolchain(17)

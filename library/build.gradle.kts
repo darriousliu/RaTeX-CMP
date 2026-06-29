@@ -11,8 +11,8 @@ plugins {
     alias(libs.plugins.atomicfu)
 }
 
-group = properties["group"].toString()
-version = properties["version"].toString()
+group = findProperty("group").toString()
+version = findProperty("version").toString()
 
 val ratexHeaderDir = rootProject.file("external/RaTeX/crates/ratex-ffi/include")
 val iosNativeDir = rootProject.file("native/ios")
@@ -47,6 +47,11 @@ kotlin {
             version = release(36)
         }
         minSdk = 23
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        }
 
         androidResources.enable = true
         compilerOptions {
@@ -92,7 +97,7 @@ kotlin {
     }
 
     sourceSets {
-        val skikoMain by creating {
+        val skikoMain = create("skikoMain") {
             dependsOn(commonMain.get())
         }
 
@@ -109,6 +114,11 @@ kotlin {
             implementation(project.dependencies.platform(libs.androidx.compose.bom))
             implementation(libs.androidx.compose.ui)
             implementation(libs.androidx.compose.ui.graphics)
+        }
+        named("androidDeviceTest") {
+            dependencies {
+                implementation(libs.androidx.test.runner)
+            }
         }
         jvmMain {
             dependsOn(skikoMain)
@@ -127,6 +137,7 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
         jvmTest.dependencies {
             implementation(libs.kotlin.test)

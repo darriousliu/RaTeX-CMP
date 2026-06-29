@@ -1,66 +1,22 @@
 package io.ratex
 
 import androidx.compose.ui.graphics.Color
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.runTest
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class RaTeXEngineJvmTest {
+abstract class RaTeXEngineCommonTestSuite : DisplayListCommonTestSuite() {
     @Test
-    fun measure_adds_vertical_guard_for_non_empty_display_lists() {
-        val displayList = DisplayList(
-            width = 2.0,
-            height = 3.0,
-            depth = 0.5,
-            items = listOf(
-                DisplayItem.GlyphPath(
-                    x = 0.0,
-                    y = 0.0,
-                    scale = 1.0,
-                    font = "KaTeX_Main-Regular",
-                    charCode = 'x'.code,
-                    color = RaTeXColor(0f, 0f, 0f, 1f),
-                ),
-            ),
-        )
-
-        val measured = displayList.measure(fontSizePx = 10f)
-
-        assertEquals(20f, measured.widthPx)
-        assertEquals(31f, measured.heightPx)
-        assertEquals(6f, measured.depthPx)
-        assertEquals(37f, measured.totalHeightPx)
-    }
-
-    @Test
-    fun measure_keeps_empty_display_lists_tight() {
-        val displayList = DisplayList(
-            width = 0.0,
-            height = 0.0,
-            depth = 0.0,
-            items = emptyList(),
-        )
-
-        val measured = displayList.measure(fontSizePx = 10f)
-
-        assertEquals(0f, measured.widthPx)
-        assertEquals(0f, measured.heightPx)
-        assertEquals(0f, measured.depthPx)
-        assertEquals(0f, measured.totalHeightPx)
-    }
-
-    @Test
-    fun parse_compose_example_formulas() {
+    fun parse_compose_example_formulas(): TestResult = runTest {
         val formulas = listOf(
             """\frac{-b \pm \sqrt{b^2 - 4ac}}{2a}""" to true,
             """f(x)=\frac{a_0}{2}+\sum_{n=1}^{\infty}\left(a_n\cos\left(\frac{n\pi x}{L}\right)+b_n\sin\left(\frac{n\pi x}{L}\right)\right)=\frac{1}{\pi}\int_{-\pi}^{\pi}f(t)\,dt+\sum_{n=1}^{\infty}\left(\frac{1}{\pi}\int_{-\pi}^{\pi}f(t)\cos(nt)\,dt\right)\cos(nx)+\sum_{n=1}^{\infty}\left(\frac{1}{\pi}\int_{-\pi}^{\pi}f(t)\sin(nt)\,dt\right)\sin(nx)""" to true,
             """\mathbb{P}\left(\bigcup_{n=1}^{m}A_n\right)=\sum_{n=1}^{m}\mathbb{P}(A_n)-\sum_{1\le i<j\le m}\mathbb{P}(A_i\cap A_j)+\sum_{1\le i<j<k\le m}\mathbb{P}(A_i\cap A_j\cap A_k)-\cdots+(-1)^{m+1}\mathbb{P}\left(\bigcap_{n=1}^{m}A_n\right)""" to true,
             """x=a_0+\cfrac{1}{a_1+\cfrac{1}{a_2+\cfrac{1}{a_3+\cfrac{1}{a_4+\cfrac{1}{a_5+\cfrac{1}{a_6}}}}}}""" to true,
-            """\sum_{i=1}^{n}\left(\int_{0}^{1}\frac{\sum_{j=1}^{m}\left(\frac{x^{i+j}}{1+x^{2j}}\right)}{\sqrt{1+\sum_{k=1}^{r}\left(\frac{x^{2k}}{k^2}\right)}}\,dx\right)^{\!2}""" to true,
+                """\sum_{i=1}^{n}\left(\int_{0}^{1}\frac{\sum_{j=1}^{m}\left(\frac{x^{i+j}}{1+x^{2j}}\right)}{\sqrt{1+\sum_{k=1}^{r}\left(\frac{x^{2k}}{k^2}\right)}}\,dx\right)^{\!2}""" to true,
             """T(x)=\begin{cases}\begin{pmatrix}1&x&x^2\\0&1&2x\\0&0&1\end{pmatrix},&x\ge 0\\[1.2em]\begin{pmatrix}1&0&0\\-x&1&0\\x^2&-2x&1\end{pmatrix},&x<0\end{cases}""" to true,
             """e^{i\pi} + 1 = 0""" to false,
             """\ce{CO2 + C -> 2 CO}\qquad \pu{5.3e-11 m}""" to true,
@@ -76,13 +32,13 @@ class RaTeXEngineJvmTest {
         )
 
         formulas.forEach { (latex, displayMode) ->
-            val displayList = RaTeXEngine.parseBlocking(latex, displayMode)
+            val displayList = parseFormula(latex, displayMode)
             assertTrue(displayList.items.isNotEmpty(), "Expected parsed items for $latex")
         }
     }
 
     @Test
-    fun parse_0_1_5_regression_formulas() {
+    fun parse_0_1_5_regression_formulas(): TestResult = runTest {
         val formulas = listOf(
             """\displaystyle \iiint_{-\infty}^{\infty}""",
             """\textstyle\sum_{n=1}^{\infty}""",
@@ -93,13 +49,13 @@ class RaTeXEngineJvmTest {
         )
 
         formulas.forEach { latex ->
-            val displayList = RaTeXEngine.parseBlocking(latex, displayMode = true)
+            val displayList = parseFormula(latex, displayMode = true)
             assertTrue(displayList.items.isNotEmpty(), "Expected parsed items for $latex")
         }
     }
 
     @Test
-    fun parse_0_1_8_regression_formulas() {
+    fun parse_0_1_8_regression_formulas(): TestResult = runTest {
         val formulas = listOf(
             "a \u00B7 b",
             "\u222B_0^1 x\\,dx",
@@ -112,13 +68,13 @@ class RaTeXEngineJvmTest {
         )
 
         formulas.forEach { latex ->
-            val displayList = RaTeXEngine.parseBlocking(latex, displayMode = true)
+            val displayList = parseFormula(latex, displayMode = true)
             assertTrue(displayList.items.isNotEmpty(), "Expected parsed items for $latex")
         }
     }
 
     @Test
-    fun parse_0_1_9_prooftree_formulas() {
+    fun parse_0_1_9_prooftree_formulas(): TestResult = runTest {
         val formulas = listOf(
             """\begin{prooftree}\AxiomC{P}\UnaryInfC{Q}\end{prooftree}""",
             """\begin{prooftree}\AxiomC{A \fCenter B}\RightLabel{r}\UnaryInfC{C}\end{prooftree}""",
@@ -127,13 +83,13 @@ class RaTeXEngineJvmTest {
         )
 
         formulas.forEach { latex ->
-            val displayList = RaTeXEngine.parseBlocking(latex, displayMode = true)
+            val displayList = parseFormula(latex, displayMode = true)
             assertTrue(displayList.items.isNotEmpty(), "Expected parsed items for $latex")
         }
     }
 
     @Test
-    fun parse_0_1_11_verb_multibyte_delimiters() {
+    fun parse_0_1_11_verb_multibyte_delimiters(): TestResult = runTest {
         val formulas = listOf(
             """\verb|hello|""",
             """\verbéxé""",
@@ -141,27 +97,13 @@ class RaTeXEngineJvmTest {
         )
 
         formulas.forEach { latex ->
-            val displayList = RaTeXEngine.parseBlocking(latex, displayMode = true)
+            val displayList = parseFormula(latex, displayMode = true)
             assertTrue(displayList.items.isNotEmpty(), "Expected parsed items for $latex")
         }
     }
 
     @Test
-    fun parse_0_1_11_reports_recursion_limit() {
-        val latex = "{".repeat(600) + "x" + "}".repeat(600)
-
-        val error = assertFailsWith<RaTeXException> {
-            RaTeXEngine.parseBlocking(latex, displayMode = true)
-        }
-        assertEquals(
-            error.message?.contains("Recursion limit exceeded"),
-            true,
-            "Expected recursion limit error, got: ${error.message}"
-        )
-    }
-
-    @Test
-    fun parse_0_1_12_regression_formulas() {
+    fun parse_0_1_12_regression_formulas(): TestResult = runTest {
         val formulas = listOf(
             """\textcolor{#ff000080}{x} + y""",
             """\textcolor{#f008}{x} + y""",
@@ -173,14 +115,14 @@ class RaTeXEngineJvmTest {
         )
 
         formulas.forEach { latex ->
-            val displayList = RaTeXEngine.parseBlocking(latex, displayMode = true)
+            val displayList = parseFormula(latex, displayMode = true)
             assertTrue(displayList.items.isNotEmpty(), "Expected parsed items for $latex")
         }
     }
 
     @Test
-    fun prooftree_line_styles_decode_to_display_lines() {
-        val dashedDisplayList = RaTeXEngine.parseBlocking(
+    fun prooftree_line_styles_decode_to_display_lines(): TestResult = runTest {
+        val dashedDisplayList = parseFormula(
             latex = """\begin{prooftree}\AxiomC{P}\dashedLine\UnaryInfC{Q}\end{prooftree}""",
             displayMode = true,
         )
@@ -192,7 +134,7 @@ class RaTeXEngineJvmTest {
             "Expected proof tree dashed line to decode as DisplayItem.Line(dashed = true)",
         )
 
-        val noLineDisplayList = RaTeXEngine.parseBlocking(
+        val noLineDisplayList = parseFormula(
             latex = """\begin{prooftree}\AxiomC{P}\noLine\UnaryInfC{Q}\end{prooftree}""",
             displayMode = true,
         )
@@ -203,12 +145,12 @@ class RaTeXEngineJvmTest {
     }
 
     @Test
-    fun inline_explicit_limits_change_formula_metrics() {
-        val defaultLimits = RaTeXEngine.parseBlocking(
+    fun inline_explicit_limits_change_formula_metrics(): TestResult = runTest {
+        val defaultLimits = parseFormula(
             latex = """\sum_{n=1}^{\infty}""",
             displayMode = false,
         )
-        val explicitLimits = RaTeXEngine.parseBlocking(
+        val explicitLimits = parseFormula(
             latex = """\sum\limits_{n=1}^{\infty}""",
             displayMode = false,
         )
@@ -224,8 +166,8 @@ class RaTeXEngineJvmTest {
     }
 
     @Test
-    fun html_style_emits_styled_display_items() {
-        val displayList = RaTeXEngine.parseBlocking(
+    fun html_style_emits_styled_display_items(): TestResult = runTest {
+        val displayList = parseFormula(
             latex = """\htmlStyle{color: blue; background-color: yellow; text-decoration: underline;}{x}""",
             displayMode = true,
         )
@@ -254,8 +196,8 @@ class RaTeXEngineJvmTest {
     }
 
     @Test
-    fun transparent_color_decodes_alpha() {
-        val displayList = RaTeXEngine.parseBlocking(
+    fun transparent_color_decodes_alpha(): TestResult = runTest {
+        val displayList = parseFormula(
             latex = """\textcolor{transparent}{x} + y""",
             displayMode = true,
         )
@@ -264,16 +206,19 @@ class RaTeXEngineJvmTest {
             .mapNotNull { item -> (item as? DisplayItem.GlyphPath)?.color }
 
         assertTrue(glyphColors.any { it.a == 0f }, "Expected transparent color alpha")
-        assertTrue(glyphColors.any { it.a == 1f }, "Expected opaque glyphs outside transparent group")
+        assertTrue(
+            glyphColors.any { it.a == 1f },
+            "Expected opaque glyphs outside transparent group"
+        )
     }
 
     @Test
-    fun parse_0_1_12_hex_rgba_colors_decode_alpha() {
-        val longHex = RaTeXEngine.parseBlocking(
+    fun parse_0_1_12_hex_rgba_colors_decode_alpha(): TestResult = runTest {
+        val longHex = parseFormula(
             latex = """\textcolor{#ff000080}{x} + y""",
             displayMode = true,
         )
-        val shortHex = RaTeXEngine.parseBlocking(
+        val shortHex = parseFormula(
             latex = """\textcolor{#f008}{x} + y""",
             displayMode = true,
         )
@@ -286,11 +231,11 @@ class RaTeXEngineJvmTest {
     }
 
     @Test
-    fun parse_0_1_12_dotsc_spacing_depends_on_following_punctuation() {
-        val dotscBeforeComma = RaTeXEngine.parseBlocking("""a\dotsc,b""", displayMode = true)
-        val ldotsBeforeComma = RaTeXEngine.parseBlocking("""a\ldots,b""", displayMode = true)
-        val dotscBeforeSemicolon = RaTeXEngine.parseBlocking("""a\dotsc;b""", displayMode = true)
-        val ldotsBeforeSemicolon = RaTeXEngine.parseBlocking("""a\ldots;b""", displayMode = true)
+    fun parse_0_1_12_dotsc_spacing_depends_on_following_punctuation(): TestResult = runTest {
+        val dotscBeforeComma = parseFormula("""a\dotsc,b""", displayMode = true)
+        val ldotsBeforeComma = parseFormula("""a\ldots,b""", displayMode = true)
+        val dotscBeforeSemicolon = parseFormula("""a\dotsc;b""", displayMode = true)
+        val ldotsBeforeSemicolon = parseFormula("""a\ldots;b""", displayMode = true)
 
         assertDoubleClose(
             ldotsBeforeComma.width,
@@ -304,8 +249,8 @@ class RaTeXEngineJvmTest {
     }
 
     @Test
-    fun parse_0_1_12_href_keeps_link_underline() {
-        val displayList = RaTeXEngine.parseBlocking(
+    fun parse_0_1_12_href_keeps_link_underline(): TestResult = runTest {
+        val displayList = parseFormula(
             latex = """\href{https://example.com}{x}""",
             displayMode = true,
         )
@@ -320,12 +265,12 @@ class RaTeXEngineJvmTest {
     }
 
     @Test
-    fun parse_0_1_12_htmlmathml_middle_branch_renders_delimiter() {
-        val plain = RaTeXEngine.parseBlocking(
+    fun parse_0_1_12_htmlmathml_middle_branch_renders_delimiter(): TestResult = runTest {
+        val plain = parseFormula(
             latex = """\left( x \middle| y \right)""",
             displayMode = true,
         )
-        val wrapped = RaTeXEngine.parseBlocking(
+        val wrapped = parseFormula(
             latex = """\left( \html@mathml{x \middle| y}{x} \right)""",
             displayMode = true,
         )
@@ -338,8 +283,8 @@ class RaTeXEngineJvmTest {
     }
 
     @Test
-    fun parse_0_1_12_widetilde_path_stays_inside_display_width() {
-        val displayList = RaTeXEngine.parseBlocking(
+    fun parse_0_1_12_widetilde_path_stays_inside_display_width(): TestResult = runTest {
+        val displayList = parseFormula(
             latex = """x\widetilde{x}""",
             displayMode = true,
         )
@@ -353,8 +298,8 @@ class RaTeXEngineJvmTest {
     }
 
     @Test
-    fun parse_respects_color_without_overriding_explicit_latex_color() {
-        val displayList = RaTeXEngine.parseBlocking(
+    fun parse_respects_color_without_overriding_explicit_latex_color(): TestResult = runTest {
+        val displayList = parseFormula(
             latex = """x + \color{red}{y}""",
             displayMode = true,
             color = Color.Blue,
@@ -364,13 +309,16 @@ class RaTeXEngineJvmTest {
             .mapNotNull { item -> (item as? DisplayItem.GlyphPath)?.color }
 
         assertTrue(glyphColors.any { it.b == 1f && it.r == 0f }, "Expected default blue glyphs")
-        assertTrue(glyphColors.any { it.r == 1f && it.g == 0f && it.b == 0f }, "Expected explicit red glyphs")
+        assertTrue(
+            glyphColors.any { it.r == 1f && it.g == 0f && it.b == 0f },
+            "Expected explicit red glyphs"
+        )
         assertEquals(1f, glyphColors.first().a)
     }
 
     @Test
-    fun parse_unicode_text_uses_cjk_regular_font() {
-        val displayList = RaTeXEngine.parseBlocking(
+    fun parse_unicode_text_uses_cjk_regular_font(): TestResult = runTest {
+        val displayList = parseFormula(
             latex = "\\text{\u4E2D\u6587 \uD83D\uDE0A}",
             displayMode = true,
         )
@@ -384,17 +332,15 @@ class RaTeXEngineJvmTest {
         )
     }
 
-    @Test
-    fun loads_cjk_platform_fallback_typeface() {
-        runBlocking {
-            RaTeXFontLoader.clear()
-            RaTeXFontLoader.ensureLoaded()
+    protected open suspend fun beforeParse() = Unit
 
-            assertNotNull(
-                RaTeXFontLoader.getPlatformTypeFace(FONT_ID_CJK_REGULAR, 0x4E2D),
-                "Expected a platform typeface for $FONT_ID_CJK_REGULAR",
-            )
-        }
+    private suspend fun parseFormula(
+        latex: String,
+        displayMode: Boolean = true,
+        color: Color = Color.Black,
+    ): DisplayList {
+        beforeParse()
+        return RaTeXEngine.parse(latex, displayMode, color)
     }
 
     private fun DisplayList.glyphColors(): List<RaTeXColor> =
