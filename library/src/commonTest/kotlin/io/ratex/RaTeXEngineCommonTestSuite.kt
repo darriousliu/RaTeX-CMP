@@ -7,6 +7,7 @@ import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.fail
 
 abstract class RaTeXEngineCommonTestSuite : DisplayListCommonTestSuite() {
     @Test
@@ -118,6 +119,206 @@ abstract class RaTeXEngineCommonTestSuite : DisplayListCommonTestSuite() {
             val displayList = parseFormula(latex, displayMode = true)
             assertTrue(displayList.items.isNotEmpty(), "Expected parsed items for $latex")
         }
+    }
+
+    @Test
+    fun parse_0_1_14_white_circle_uses_fitted_large_circle_glyph(): TestResult = runTest {
+        val circle = parseFormula("○", displayMode = true)
+        val square = parseFormula("□", displayMode = true)
+        val bigCircle = parseFormula("""\bigcirc""", displayMode = true)
+        val circleGlyph = circle.items
+            .filterIsInstance<DisplayItem.GlyphPath>()
+            .single()
+
+        assertMetricsEqual(
+            expected = square,
+            actual = circle,
+            message = "Expected U+25CB white circle to fit the white-square metric box",
+        )
+        assertEquals(
+            0x25EF,
+            circleGlyph.charCode,
+            "Expected U+25CB to render with the bundled U+25EF glyph",
+        )
+        assertTrue(
+            circleGlyph.scale < 1.0,
+            "Expected the U+25EF replacement glyph to be scaled down: ${circleGlyph.scale}",
+        )
+        assertTrue(
+            bigCircle.width > circle.width,
+            "Expected \\bigcirc to remain wider than ordinary U+25CB: bigcirc=${bigCircle.width}, circle=${circle.width}",
+        )
+    }
+
+    @Test
+    fun parse_0_1_14_contextual_dots_match_explicit_forms(): TestResult = runTest {
+        val formulas = listOf(
+            """x,\dots,y""" to """x,\dotsc,y""",
+            """x\dots+y""" to """x\dotsb+y""",
+            """x\dots\int y""" to """x\dotsi\int y""",
+            """x\dots y""" to """x\dotso y""",
+        )
+
+        formulas.forEach { (contextualLatex, explicitLatex) ->
+            val contextual = parseFormula(contextualLatex, displayMode = true)
+            val explicit = parseFormula(explicitLatex, displayMode = true)
+
+            assertMetricsEqual(
+                expected = explicit,
+                actual = contextual,
+                message = "Expected $contextualLatex metrics to match $explicitLatex",
+            )
+            assertEquals(
+                explicit.items,
+                contextual.items,
+                "Expected $contextualLatex display output to match $explicitLatex",
+            )
+        }
+    }
+
+    @Test
+    fun parse_0_1_14_multidot_accents_decode_to_filled_paths(): TestResult = runTest {
+        val formulas = listOf(
+            """\dddot{x}""",
+            """\ddddot{x}""",
+            """\small x_{\dddot{y}}""",
+            """\Huge x_{\ddddot{y}}""",
+        )
+
+        formulas.forEach { latex ->
+            val displayList = parseFormula(latex, displayMode = true)
+            val paths = displayList.items.filterIsInstance<DisplayItem.Path>()
+
+            assertTrue(paths.isNotEmpty(), "Expected $latex to emit a decoded path")
+            assertTrue(
+                paths.any { path -> path.fill && path.commands.isNotEmpty() },
+                "Expected $latex to emit a non-empty filled path",
+            )
+        }
+    }
+
+    @Test
+    fun parse_0_1_14_unicode_big_operators_match_command_metrics(): TestResult = runTest {
+        val operators = listOf(
+            "∏" to """\prod""",
+            "∐" to """\coprod""",
+            "∑" to """\sum""",
+            "⋀" to """\bigwedge""",
+            "⋁" to """\bigvee""",
+            "⋂" to """\bigcap""",
+            "⋃" to """\bigcup""",
+            "⨀" to """\bigodot""",
+            "⨁" to """\bigoplus""",
+            "⨂" to """\bigotimes""",
+            "⨄" to """\biguplus""",
+            "⨆" to """\bigsqcup""",
+        )
+
+        operators.forEach { (unicode, command) ->
+            val unicodeDisplayList = parseFormula("${unicode}_{i=1}^{n}", displayMode = true)
+            val commandDisplayList = parseFormula("${command}_{i=1}^{n}", displayMode = true)
+
+            assertMetricsEqual(
+                expected = commandDisplayList,
+                actual = unicodeDisplayList,
+                message = "Expected Unicode operator $unicode to match $command",
+            )
+        }
+    }
+
+    @Test
+    fun parse_0_1_14_grouped_subscripts_do_not_inherit_italic_kern(): TestResult = runTest {
+        val base = parseFormula("f", displayMode = true)
+        val direct = parseFormula("""f_i""", displayMode = true)
+        val grouped = parseFormula("""{f}_i""", displayMode = true)
+        val directSubscriptX = direct.singleGlyph('i').x
+        val groupedSubscriptX = grouped.singleGlyph('i').x
+
+        assertDoubleClose(
+            expected = base.width,
+            actual = groupedSubscriptX,
+            message = "Expected a grouped base to place its subscript after the full base width",
+        )
+        assertTrue(
+            directSubscriptX < groupedSubscriptX,
+            "Expected only the direct italic symbol to apply negative subscript kern: direct=$directSubscriptX, grouped=$groupedSubscriptX",
+        )
+
+        val cpiBase = parseFormula("""\text{\textit{CPI}}""", displayMode = true)
+        val cpiWithSubscript = parseFormula("""\text{\textit{CPI}}_t""", displayMode = true)
+        val cpiSubscriptX = cpiWithSubscript.singleGlyph('t').x
+
+        assertTrue(cpiWithSubscript.items.isNotEmpty(), "Expected the CPI formula to render")
+        assertDoubleClose(
+            expected = cpiBase.width,
+            actual = cpiSubscriptX,
+            message = "Expected the CPI text span not to inherit its final glyph's italic correction",
+        )
+    }
+
+    @Test
+    fun parse_0_1_14_href_does_not_change_monospace_text_width(): TestResult = runTest {
+        val plain = parseFormula("""\texttt{AaBb123}""", displayMode = true)
+        val linked = parseFormula(
+            latex = """\href{https://example.com}{\texttt{AaBb123}}""",
+            displayMode = true,
+        )
+
+        assertDoubleClose(
+            expected = plain.width,
+            actual = linked.width,
+            message = "Expected href styling not to add tracking to monospace text",
+        )
+        assertTrue(
+            linked.items.any { item ->
+                val line = item as? DisplayItem.Line
+                line?.color?.b == 1f && line.color.r == 0f && line.color.g == 0f
+            },
+            "Expected the href body to retain its blue underline",
+        )
+    }
+
+    @Test
+    fun parse_0_1_14_enforces_recursion_depth_boundary(): TestResult = runTest {
+        val atLimit = nestedGroupFormula(depth = 32)
+        val atLimitDisplayList = parseFormula(atLimit, displayMode = true)
+
+        assertTrue(
+            atLimitDisplayList.items.isNotEmpty(),
+            "Expected exactly 32 nested groups to parse",
+        )
+        assertRaTeXParseFailure(nestedGroupFormula(depth = 33))
+        assertRaTeXParseFailure(nestedGroupFormula(depth = 300))
+    }
+
+    @Test
+    fun parse_0_1_14_inline_trailing_comment_preserves_fraction_style(): TestResult = runTest {
+        val plainInline = parseFormula("""\frac{1}{2}""", displayMode = false)
+        val commentedInline = parseFormula(
+            latex = """\frac{1}{2}% trailing comment""",
+            displayMode = false,
+        )
+        val commentedDisplay = parseFormula(
+            latex = """\frac{1}{2}% trailing comment""",
+            displayMode = true,
+        )
+
+        assertMetricsEqual(
+            expected = plainInline,
+            actual = commentedInline,
+            message = "Expected an inline trailing comment to be ignored",
+        )
+        assertEquals(
+            plainInline.items,
+            commentedInline.items,
+            "Expected an inline trailing comment not to change display output",
+        )
+        assertTrue(
+            commentedDisplay.width > commentedInline.width &&
+                commentedDisplay.height > commentedInline.height &&
+                commentedDisplay.depth > commentedInline.depth,
+            "Expected display fraction metrics to exceed inline metrics: display=$commentedDisplay, inline=$commentedInline",
+        )
     }
 
     @Test
@@ -346,6 +547,10 @@ abstract class RaTeXEngineCommonTestSuite : DisplayListCommonTestSuite() {
     private fun DisplayList.glyphColors(): List<RaTeXColor> =
         items.mapNotNull { item -> (item as? DisplayItem.GlyphPath)?.color }
 
+    private fun DisplayList.singleGlyph(char: Char): DisplayItem.GlyphPath =
+        items.filterIsInstance<DisplayItem.GlyphPath>()
+            .single { glyph -> glyph.charCode == char.code }
+
     private fun DisplayList.maxPathX(): Double {
         var maxPathX = Double.NEGATIVE_INFINITY
         items.forEach { item ->
@@ -372,6 +577,32 @@ abstract class RaTeXEngineCommonTestSuite : DisplayListCommonTestSuite() {
             }
         }
         return maxPathX
+    }
+
+    private fun nestedGroupFormula(depth: Int): String =
+        "{".repeat(depth) + "x" + "}".repeat(depth)
+
+    private suspend fun assertRaTeXParseFailure(latex: String) {
+        try {
+            parseFormula(latex, displayMode = true)
+        } catch (error: RaTeXException) {
+            assertTrue(
+                error.message?.contains("Recursion limit exceeded") == true,
+                "Expected recursion limit error, got: ${error.message}",
+            )
+            return
+        }
+        fail("Expected RaTeXException for over-limit formula with length ${latex.length}")
+    }
+
+    private fun assertMetricsEqual(
+        expected: DisplayList,
+        actual: DisplayList,
+        message: String,
+    ) {
+        assertDoubleClose(expected.width, actual.width, "$message (width)")
+        assertDoubleClose(expected.height, actual.height, "$message (height)")
+        assertDoubleClose(expected.depth, actual.depth, "$message (depth)")
     }
 
     private fun assertFloatClose(expected: Float, actual: Float, message: String) {

@@ -297,6 +297,39 @@ private val showcaseSamples = listOf(
             ),
         ),
     ),
+    ShowcaseSample(
+        version = "0.1.14",
+        label = "0.1.14 white circle and square",
+        content = ShowcaseContent.BlockFormula("""○\div□=5\qquad\mathbf{○}\quad\bigcirc"""),
+    ),
+    ShowcaseSample(
+        version = "0.1.14",
+        label = "0.1.14 grouped italic subscripts",
+        content = ShowcaseContent.BlockFormula(
+            """\text{\textit{Inflation}}_t=\frac{\text{\textit{CPI}}_t-\text{\textit{CPI}}_{t-1}}{\text{\textit{CPI}}_{t-1}}\times100\%""",
+        ),
+    ),
+    ShowcaseSample(
+        version = "0.1.14",
+        label = """0.1.14 contextual \dots""",
+        content = ShowcaseContent.BlockFormula(
+            """x_1,\dots,x_n\qquad a_1+\dots+a_n\qquad\int\dots\int f""",
+        ),
+    ),
+    ShowcaseSample(
+        version = "0.1.14",
+        label = """0.1.14 \dddot and \ddddot""",
+        content = ShowcaseContent.BlockFormula(
+            """\dddot{x}+\ddddot{y}\qquad z_{\dddot{u}}\qquad{\Large\ddddot{v}}""",
+        ),
+    ),
+    ShowcaseSample(
+        version = "0.1.14",
+        label = "0.1.14 Unicode big operators",
+        content = ShowcaseContent.BlockFormula(
+            """∑_{i=1}^{n}i\qquad∏_{i=1}^{n}i\qquad⋃_{i=1}^{n}A_i""",
+        ),
+    ),
 )
 
 private val showcaseVersionFilters = (

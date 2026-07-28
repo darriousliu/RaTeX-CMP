@@ -12,18 +12,19 @@ import kotlin.js.js
 private external object RaTeXWasmModule {
     fun initRatex(): Promise<JsAny?>
 
-    fun renderLatex(latex: String, color: String): String
+    fun renderLatex(latex: String, color: String, displayMode: Boolean): String
 }
 
 @Suppress("UNUSED_PARAMETER")
 private fun renderLatexCatching(
-    renderLatex: (String, String) -> String,
+    renderLatex: (String, String, Boolean) -> String,
     latex: String,
     color: String,
+    displayMode: Boolean,
 ): String = js(
     """{
         try {
-            return renderLatex(latex, color);
+            return renderLatex(latex, color, displayMode);
         } catch (error) {
             throw new Error(String(error));
         }
@@ -33,9 +34,12 @@ private fun renderLatexCatching(
 internal fun initRatex(): Promise<JsAny?> =
     RaTeXWasmModule.initRatex()
 
-internal fun renderLatex(latex: String, color: String): String =
+internal fun renderLatex(latex: String, color: String, displayMode: Boolean): String =
     renderLatexCatching(
-        renderLatex = { source, cssColor -> RaTeXWasmModule.renderLatex(source, cssColor) },
+        renderLatex = { source, cssColor, isDisplayMode ->
+            RaTeXWasmModule.renderLatex(source, cssColor, isDisplayMode)
+        },
         latex = latex,
         color = color,
+        displayMode = displayMode,
     )

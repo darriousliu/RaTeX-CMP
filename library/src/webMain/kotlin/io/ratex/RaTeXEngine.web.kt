@@ -3,6 +3,8 @@
 package io.ratex
 
 import androidx.compose.ui.graphics.Color
+import io.ratex.RaTeXEngine.parse
+import io.ratex.RaTeXEngine.parseBlocking
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.js.ExperimentalWasmJsInterop
@@ -14,6 +16,15 @@ actual object RaTeXEngine {
     private var initPromise: Promise<JsAny?>? = null
     private var initialized = false
 
+    /**
+     * Initializes the RaTeX WebAssembly module for this browser application.
+     *
+     * Call this from a coroutine before [parse] or [parseBlocking]. Repeated and concurrent calls
+     * share the same in-flight initialization and return immediately after initialization has
+     * succeeded. If initialization fails, the cached promise is cleared so a later call can retry.
+     *
+     * @throws RaTeXException If the WebAssembly module cannot be initialized.
+     */
     suspend fun initialize() {
         if (initialized) return
         val promise = initPromise ?: initRatex().also { initPromise = it }
@@ -52,9 +63,8 @@ actual object RaTeXEngine {
         displayMode: Boolean,
         color: Color,
     ): DisplayList {
-        val source = if (displayMode) latex else """\textstyle{$latex}"""
         val json = try {
-            renderLatex(source, color.toRatexCssColor())
+            renderLatex(latex, color.toRatexCssColor(), displayMode)
         } catch (error: Throwable) {
             throw RaTeXException(error.message ?: "RaTeX WASM parse failed")
         }

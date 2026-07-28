@@ -1,5 +1,8 @@
 package io.ratex
 
+import io.ratex.RaTeXFontLoader.clear
+import io.ratex.RaTeXFontLoader.ensureLoaded
+import io.ratex.RaTeXFontLoader.loadFromResources
 import io.ratex.compose.resources.Res
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.sync.Mutex
@@ -8,6 +11,13 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmStatic
 
+/**
+ * Manages the process-wide font cache used by the Compose RaTeX renderer.
+ *
+ * Bundled KaTeX fonts are loaded lazily by [ensureLoaded]. Applications can register additional
+ * CJK or emoji fonts after bundled loading completes. Registered fonts remain cached until [clear]
+ * or [loadFromResources] is called.
+ */
 object RaTeXFontLoader {
     private val fontsLoaded = atomic(false)
     private val loadLock = Mutex()
@@ -36,8 +46,17 @@ object RaTeXFontLoader {
     )
 
     /**
-     * Ensure KaTeX fonts are loaded; system Unicode fallback fonts are resolved lazily by platform.
-     * @return Number of fonts loaded (0 if already loaded)
+     * Ensures that bundled KaTeX fonts are loaded.
+     *
+     * Concurrent callers are serialized, and loading work runs on the platform font-loading
+     * context instead of the caller's context. This operation is process-wide and idempotent:
+     * after the first completed load it returns `0`. Individual resource or decoding failures are
+     * logged and skipped; system Unicode fallback fonts are resolved lazily while drawing.
+     *
+     * Call this before registering app-provided fonts because the initial bundled load clears the
+     * font cache.
+     *
+     * @return The number of bundled fonts loaded, or `0` if loading had already completed.
      */
     suspend fun ensureLoaded(): Int {
         if (fontsLoaded.value) return 0
@@ -52,8 +71,15 @@ object RaTeXFontLoader {
     }
 
     /**
-     * Load KaTeX fonts from Compose resources.
-     * @return Number of fonts successfully loaded
+     * Clears the current font cache and immediately loads bundled KaTeX fonts from Compose
+     * resources.
+     *
+     * This is the lower-level, non-idempotent loader. It is not protected by [ensureLoaded]'s
+     * mutex and does not update its loaded flag, so most callers should use [ensureLoaded].
+     * App-provided and lazily resolved fallback fonts are removed when loading starts. Individual
+     * resource or decoding failures are logged and skipped.
+     *
+     * @return The number of bundled fonts successfully loaded.
      */
     suspend fun loadFromResources(): Int {
         FontCache.clear()
@@ -77,11 +103,18 @@ object RaTeXFontLoader {
     }
 
     /**
-     * Register an app-provided font for a RaTeX FontId, such as "CJK-Regular",
-     * "CJK-Fallback", or "Emoji-Fallback".
+     * Registers an app-provided font for a RaTeX font ID.
      *
-     * Browser targets do not have reliable access to host system fonts from Skia,
-     * so apps that need CJK or emoji glyphs should call this after [ensureLoaded].
+     * Common fallback IDs include `CJK-Regular`, `CJK-Fallback`, and `Emoji-Fallback`. Browser
+     * targets do not have reliable access to host system fonts from Skia, so applications that
+     * render CJK or emoji should register suitable fonts after [ensureLoaded]. Registration
+     * mutates the process-wide cache; perform it during application initialization rather than
+     * concurrently with rendering.
+     *
+     * @param fontId RaTeX font ID that should resolve to this typeface.
+     * @param bytes Complete bytes of a font supported by the current platform.
+     * @return `true` when the font was decoded and cached, or `false` when decoding is unsupported
+     * or fails without an exception.
      */
     @JvmStatic
     fun registerFont(
@@ -94,7 +127,14 @@ object RaTeXFontLoader {
     }
 
     /**
-     * Register one app-provided CJK font for both "CJK-Regular" and "CJK-Fallback".
+     * Registers one app-provided CJK font as both `CJK-Regular` and `CJK-Fallback`.
+     *
+     * Call this after [ensureLoaded]. Registration mutates the process-wide cache and should
+     * normally happen during application initialization.
+     *
+     * @param bytes Complete bytes of a CJK font supported by the current platform.
+     * @return `2` when the typeface was decoded and registered under both IDs, or `0` when
+     * decoding is unsupported or fails without an exception.
      */
     @JvmStatic
     fun registerCjkFallbackFont(bytes: ByteArray): Int {
@@ -105,7 +145,14 @@ object RaTeXFontLoader {
     }
 
     /**
-     * Register an app-provided emoji fallback font for "Emoji-Fallback".
+     * Registers an app-provided font as `Emoji-Fallback`.
+     *
+     * Call this after [ensureLoaded], especially on browser targets where a suitable system emoji
+     * typeface may not be available to Skia.
+     *
+     * @param bytes Complete bytes of an emoji font supported by the current platform.
+     * @return `true` when the font was decoded and cached, or `false` when decoding is unsupported
+     * or fails without an exception.
      */
     @JvmStatic
     fun registerEmojiFallbackFont(bytes: ByteArray): Boolean =
@@ -139,6 +186,13 @@ object RaTeXFontLoader {
         }
     }
 
+    /**
+     * Clears all bundled, app-provided, and lazily resolved fonts from the process-wide cache.
+     *
+     * The next [ensureLoaded] call reloads bundled fonts. Avoid clearing the cache concurrently
+     * with rendering; this function is primarily useful for tests or explicit font
+     * reconfiguration.
+     */
     @JvmStatic
     fun clear() {
         FontCache.clear()

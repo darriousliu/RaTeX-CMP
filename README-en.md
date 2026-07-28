@@ -65,7 +65,7 @@ repositories {
 The current KMP main library coordinates are:
 
 ```kotlin
-implementation("io.github.darriousliu:ratex:0.1.12-1")
+implementation("io.github.darriousliu:ratex:0.1.14")
 ```
 
 In a Kotlin Multiplatform project, you would typically add it to `commonMain`:
@@ -74,7 +74,7 @@ In a Kotlin Multiplatform project, you would typically add it to `commonMain`:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.12-1")
+            implementation("io.github.darriousliu:ratex:0.1.14")
         }
     }
 }
@@ -86,8 +86,8 @@ If you want to run on JVM Desktop, you also need to add the native runtime depen
 kotlin {
     sourceSets {
         jvmMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.12-1")
-            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.12-1")
+            implementation("io.github.darriousliu:ratex:0.1.14")
+            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.14")
         }
     }
 }
@@ -104,6 +104,8 @@ Available Desktop native coordinates:
 In this repository, Desktop native libraries are published as separate submodules; the sample app automatically selects the matching runtime dependency for the current host platform.
 
 ### 3. Use the Compose component
+
+#### 3.1 Basic usage
 
 The simplest usage is to pass a LaTeX string directly:
 
@@ -138,7 +140,7 @@ RaTeX(
 
 If you want the formula color to follow the current Material text color, you can omit `color` and the composable will use `LocalContentColor.current`.
 
-### 4. Reuse parsed results
+#### 3.2 Reuse parsed results
 
 If you want to parse first and reuse the resulting `DisplayList` in multiple places, you can use `rememberRaTeXDisplayList`:
 
@@ -165,38 +167,78 @@ fun ParsedFormulaSample(latex: String) {
 }
 ```
 
-If you need the parsed result synchronously for inline placeholders, mixed text rendering, or immediate size measurement, you can use `rememberBlockingRaTeXDisplayList`:
+#### 3.3 Use `Text` with `inlineContent`
+
+To mix an inline formula into `Text`, parse it synchronously with `rememberBlockingRaTeXDisplayList`, then create `InlineTextContent` from the measured result:
 
 ```kotlin
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.sp
 import io.ratex.compose.RaTeX
 import io.ratex.compose.rememberBlockingRaTeXDisplayList
+import io.ratex.measure
 
 @Composable
-fun InlineFormulaSample(latex: String) {
+fun InlineFormulaText() {
+    val formula = """E = mc^2"""
+    val formulaId = "energy"
+    val formulaFontSize = 18.sp
+    val density = LocalDensity.current
     val parseResult = rememberBlockingRaTeXDisplayList(
-        latex = latex,
+        latex = formula,
         displayMode = false,
     )
+    val displayList = parseResult.getOrNull()
+    val fontSizePx = with(density) { formulaFontSize.toPx() }
+    val measured = remember(displayList, fontSizePx) {
+        displayList?.measure(fontSizePx)
+    }
+    val placeholderWidth = with(density) {
+        (measured?.widthPx ?: fontSizePx).toSp()
+    }
+    val placeholderHeight = with(density) {
+        (measured?.totalHeightPx ?: fontSizePx).toSp()
+    }
 
-    RaTeX(
-        displayList = parseResult.getOrNull(),
-        fontSize = 18.sp,
+    val inlineContent = mapOf(
+        formulaId to InlineTextContent(
+            placeholder = Placeholder(
+                width = placeholderWidth,
+                height = placeholderHeight,
+                placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter,
+            ),
+        ) {
+            RaTeX(
+                displayList = displayList,
+                fontSize = formulaFontSize,
+            )
+        },
+    )
+
+    Text(
+        text = buildAnnotatedString {
+            append("The mass–energy equation ")
+            appendInlineContent(formulaId, formula)
+            append(" describes the relationship between mass and energy.")
+        },
+        inlineContent = inlineContent,
     )
 }
 ```
 
-Note: JS/Wasm browser targets need asynchronous WASM initialization, so prefer `rememberRaTeXDisplayList` / `RaTeX(latex = ...)` for the first parse. `rememberBlockingRaTeXDisplayList` is intended mainly for Android, iOS, and JVM Desktop.
-
-### 5. Main parameters
-
-- `latex`: the LaTeX formula string to render
-- `fontSize`: the rendering font size
-- `displayMode`: `true` for block math, `false` for inline math
-- `color`: formula color; defaults to `LocalContentColor.current` from the current composition
-- `displayList`: a parsed drawing result that is useful for caching or reuse
-- `rememberBlockingRaTeXDisplayList`: a synchronous parsing helper for inline text composition or immediate measurement needs
+Note: JS/Wasm browser targets must explicitly call `RaTeXEngine.initialize()` from a coroutine
+before any parsing. After initialization, `rememberRaTeXDisplayList` / `RaTeX(latex = ...)` load
+fonts and parse asynchronously. Before using `rememberBlockingRaTeXDisplayList`, also preload fonts
+asynchronously with `RaTeXFontLoader.ensureLoaded()`; the synchronous helper is therefore intended
+mainly for Android, iOS, and JVM Desktop.
 
 ## 🧭 Repository Overview
 

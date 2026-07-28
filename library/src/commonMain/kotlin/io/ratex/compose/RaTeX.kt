@@ -26,6 +26,24 @@ import io.ratex.RaTeXFontLoader
 import io.ratex.measure
 import kotlin.math.ceil
 
+/**
+ * Remembers an asynchronous LaTeX parse operation for the current composition.
+ *
+ * The returned [State] is initially `null` while fonts are loaded and parsing is pending, then
+ * contains either the parsed [DisplayList] or the failure. The result is retained at this call
+ * position and parsing restarts whenever [latex], [displayMode], or [color] changes. This is a
+ * composition-scoped cache; persist a successful display list elsewhere if it must outlive the
+ * composition.
+ *
+ * Browser applications must initialize RaTeX WASM before calling this API. Errors are captured in
+ * the returned [Result] instead of being thrown from composition.
+ *
+ * @param latex The LaTeX formula source.
+ * @param displayMode `true` for display/block math style, or `false` for inline/text math style.
+ * @param color The color embedded in the parsed drawing commands. Defaults to the current
+ * [LocalContentColor].
+ * @return Observable parse state: `null` while pending, then a success or failure result.
+ */
 @Composable
 fun rememberRaTeXDisplayList(
     latex: String,
@@ -38,6 +56,26 @@ fun rememberRaTeXDisplayList(
     }
 }
 
+/**
+ * Remembers a synchronous LaTeX parse result for the current composition.
+ *
+ * Font loading and parsing block the current composition the first time this call is evaluated for
+ * a set of inputs. The [Result] is reused until [latex], [displayMode], or [color] changes. This
+ * helper is commonly used with [androidx.compose.material3.Text]'s `inlineContent`, where constructing `InlineTextContent`
+ * requires immediate formula metrics to size its placeholder. Prefer [rememberRaTeXDisplayList]
+ * for ordinary rendering.
+ *
+ * Browser targets cannot initialize Compose resources or RaTeX WASM synchronously, so this helper
+ * is usable there only after asynchronous initialization has completed. Parsing and font-loading
+ * failures are captured in the returned [Result].
+ *
+ * @param latex The LaTeX formula source.
+ * @param displayMode `true` for display/block math style, or `false` for inline/text math style.
+ * @param color The color embedded in the parsed drawing commands. Defaults to the current
+ * [LocalContentColor].
+ * @return A cached success containing the display list, or a failure describing why it could not
+ * be produced.
+ */
 @Composable
 fun rememberBlockingRaTeXDisplayList(
     latex: String,
@@ -52,6 +90,22 @@ fun rememberBlockingRaTeXDisplayList(
     }
 }
 
+/**
+ * Parses and renders a LaTeX formula.
+ *
+ * Font loading and parsing run asynchronously. Until parsing succeeds, or if parsing fails, this
+ * overload emits empty content. Use [rememberRaTeXDisplayList] with the [RaTeX] overload that takes
+ * a [DisplayList] when the UI needs to display loading or error state, or when one parse result
+ * should be reused in multiple places.
+ *
+ * @param latex The LaTeX formula source to render.
+ * @param modifier Modifier applied to the formula layout.
+ * @param fontSize Base rendering size. Changing it rescales the display list without changing the
+ * formula's math style.
+ * @param displayMode `true` for display/block math style, or `false` for inline/text math style.
+ * This controls TeX layout; it does not itself place the composable in a block or text line.
+ * @param color Formula color. Defaults to the current [LocalContentColor].
+ */
 @Composable
 fun RaTeX(
     latex: String,
@@ -72,6 +126,18 @@ fun RaTeX(
     )
 }
 
+/**
+ * Renders an already parsed [DisplayList].
+ *
+ * This overload performs no LaTeX parsing, so the same display list can be cached and reused
+ * across multiple compositions or rendered at different [fontSize] values. Display mode and color
+ * are part of the parsed commands and can only be changed by parsing a new list. Fonts are loaded
+ * asynchronously; [displayList] equal to `null` emits empty content.
+ *
+ * @param displayList Parsed drawing commands, or `null` to render an empty formula.
+ * @param modifier Modifier applied to the formula layout.
+ * @param fontSize Base rendering size used to scale the display-list metrics and commands.
+ */
 @Composable
 fun RaTeX(
     displayList: DisplayList?,

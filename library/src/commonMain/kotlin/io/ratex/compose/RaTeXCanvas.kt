@@ -13,6 +13,22 @@ import io.ratex.PathCommand
 import io.ratex.verticalAntialiasGuardPx
 import kotlin.math.max
 
+/**
+ * Draws a RaTeX [DisplayList] into this Compose [DrawScope].
+ *
+ * Lines, rectangles, and vector paths are drawn by this function. Glyph commands are delegated to
+ * [drawGlyph], allowing callers to provide platform-specific font rendering. The default callback
+ * ignores glyphs, so callers that need a complete formula must provide one. This low-level API
+ * neither loads fonts nor measures or caches the display list.
+ *
+ * Coordinates are scaled by [fontSizePx], and the same vertical antialiasing guard used by
+ * [io.ratex.measure] is applied before drawing.
+ *
+ * @param displayList Parsed commands to draw, in paint order.
+ * @param fontSizePx Base font size in physical pixels.
+ * @param drawGlyph Callback for each glyph command. Its `Float` argument is the base
+ * [fontSizePx]; the callback must also apply [DisplayItem.GlyphPath.scale].
+ */
 fun DrawScope.drawDisplayList(
     displayList: DisplayList,
     fontSizePx: Float,

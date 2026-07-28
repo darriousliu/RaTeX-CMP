@@ -67,7 +67,7 @@ repositories {
 当前 KMP 主库坐标为：
 
 ```kotlin
-implementation("io.github.darriousliu:ratex:0.1.12-1")
+implementation("io.github.darriousliu:ratex:0.1.14")
 ```
 
 在 Kotlin Multiplatform 项目中，通常添加到 `commonMain`：
@@ -76,7 +76,7 @@ implementation("io.github.darriousliu:ratex:0.1.12-1")
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.12-1")
+            implementation("io.github.darriousliu:ratex:0.1.14")
         }
     }
 }
@@ -88,8 +88,8 @@ kotlin {
 kotlin {
     sourceSets {
         jvmMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.12-1")
-            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.12-1")
+            implementation("io.github.darriousliu:ratex:0.1.14")
+            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.14")
         }
     }
 }
@@ -106,6 +106,8 @@ kotlin {
 在这个仓库里，Desktop native 库本身是独立发布的子模块；示例工程会按当前主机平台自动选择对应的运行时依赖。
 
 ### 3. 使用 Compose 组件
+
+#### 3.1 基础用法
 
 最简单的用法是直接传入 LaTeX 字符串：
 
@@ -140,7 +142,7 @@ RaTeX(
 
 如果你希望颜色跟随当前 Material 主题文本色，也可以直接省略 `color` 参数，组件默认会读取 `LocalContentColor.current`。
 
-### 4. 复用解析结果
+#### 3.2 复用解析结果
 
 如果你希望先解析，再在多个地方复用 `DisplayList`，可以使用 `rememberRaTeXDisplayList`：
 
@@ -167,38 +169,77 @@ fun ParsedFormulaSample(latex: String) {
 }
 ```
 
-如果你在行内占位、文本混排或预计算尺寸的场景下，需要同步拿到结果，也可以使用 `rememberBlockingRaTeXDisplayList`：
+#### 3.3 `Text` 的 `inlineContent` 用法
+
+在 `Text` 中混排行内公式时，先通过 `rememberBlockingRaTeXDisplayList` 同步解析公式，再根据测量结果创建 `InlineTextContent`：
 
 ```kotlin
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.sp
 import io.ratex.compose.RaTeX
 import io.ratex.compose.rememberBlockingRaTeXDisplayList
+import io.ratex.measure
 
 @Composable
-fun InlineFormulaSample(latex: String) {
+fun InlineFormulaText() {
+    val formula = """E = mc^2"""
+    val formulaId = "energy"
+    val formulaFontSize = 18.sp
+    val density = LocalDensity.current
     val parseResult = rememberBlockingRaTeXDisplayList(
-        latex = latex,
+        latex = formula,
         displayMode = false,
     )
+    val displayList = parseResult.getOrNull()
+    val fontSizePx = with(density) { formulaFontSize.toPx() }
+    val measured = remember(displayList, fontSizePx) {
+        displayList?.measure(fontSizePx)
+    }
+    val placeholderWidth = with(density) {
+        (measured?.widthPx ?: fontSizePx).toSp()
+    }
+    val placeholderHeight = with(density) {
+        (measured?.totalHeightPx ?: fontSizePx).toSp()
+    }
 
-    RaTeX(
-        displayList = parseResult.getOrNull(),
-        fontSize = 18.sp,
+    val inlineContent = mapOf(
+        formulaId to InlineTextContent(
+            placeholder = Placeholder(
+                width = placeholderWidth,
+                height = placeholderHeight,
+                placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter,
+            ),
+        ) {
+            RaTeX(
+                displayList = displayList,
+                fontSize = formulaFontSize,
+            )
+        },
+    )
+
+    Text(
+        text = buildAnnotatedString {
+            append("质能方程 ")
+            appendInlineContent(formulaId, formula)
+            append(" 描述了质量与能量的关系。")
+        },
+        inlineContent = inlineContent,
     )
 }
 ```
 
-注意：JS/Wasm 浏览器端需要异步初始化 WASM，首次解析请优先使用 `rememberRaTeXDisplayList` / `RaTeX(latex = ...)` 这类 suspend 路径；`rememberBlockingRaTeXDisplayList` 更适合 Android、iOS 和 JVM Desktop。
-
-### 5. 主要参数说明
-
-- `latex`：要渲染的 LaTeX 公式字符串
-- `fontSize`：公式渲染字号
-- `displayMode`：`true` 为块级公式，`false` 为行内公式
-- `color`：公式颜色；默认继承当前组合环境中的 `LocalContentColor.current`
-- `displayList`：已解析好的绘制结果，适合缓存或复用
-- `rememberBlockingRaTeXDisplayList`：同步解析辅助 API，适合嵌入文本或需要立即测量公式尺寸的场景
+注意：JS/Wasm 浏览器端在任何解析前，都必须先在协程中显式调用 `RaTeXEngine.initialize()`。
+`rememberRaTeXDisplayList` / `RaTeX(latex = ...)` 会在初始化后异步加载字体并解析公式；如果要使用
+`rememberBlockingRaTeXDisplayList`，还应预先异步调用 `RaTeXFontLoader.ensureLoaded()`，因此同步辅助
+API 更适合 Android、iOS 和 JVM Desktop。
 
 ## 🧭 仓库概览
 
