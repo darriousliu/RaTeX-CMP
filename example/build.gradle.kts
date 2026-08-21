@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.Copy
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -32,6 +33,12 @@ kotlin {
     jvm {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
+
+    macosArm64 {
+        binaries.executable {
+            entryPoint = "io.ratex.compose.example.main"
         }
     }
 
@@ -98,6 +105,21 @@ kotlin {
 
 compose.resources {
     packageOfResClass = "io.ratex.compose.example.resources"
+}
+
+// Compose does not bundle resources for standalone macOS Native executables yet.
+// Keep this sample-only bridge until the upstream executable resource pipeline supports it.
+val prepareMacosArm64ExecutableResources = tasks.register<Copy>("prepareMacosArm64ExecutableResources") {
+    description = "Copies Compose resources next to the macosArm64 Native executable."
+    dependsOn("macosArm64ProcessResources", "linkDebugExecutableMacosArm64")
+    from(layout.buildDirectory.dir("processedResources/macosArm64/main/composeResources")) {
+        into("composeResources")
+    }
+    into(layout.buildDirectory.dir("bin/macosArm64/debugExecutable/compose-resources"))
+}
+
+tasks.named("runDebugExecutableMacosArm64") {
+    dependsOn(prepareMacosArm64ExecutableResources)
 }
 
 compose.desktop {

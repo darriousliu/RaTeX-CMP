@@ -545,7 +545,6 @@ private fun InlineMathText(
         style = MaterialTheme.typography.bodyLarge.copy(
             fontSize = 16.sp,
             lineHeight = 28.8.sp,
-            color = Color.Black.copy(alpha = 0.87f),
         ),
         inlineContent = inlineContent,
     )
