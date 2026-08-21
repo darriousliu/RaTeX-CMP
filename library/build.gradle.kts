@@ -16,6 +16,7 @@ version = findProperty("version").toString()
 
 val ratexHeaderDir = rootProject.file("external/RaTeX/crates/ratex-ffi/include")
 val iosNativeDir = rootProject.file("native/ios")
+val macosNativeDir = rootProject.file("library/native/darwin-aarch64")
 
 fun hostDesktopNativeProjectPath(): String {
     val osName = System.getProperty("os.name").lowercase()
@@ -96,6 +97,23 @@ kotlin {
         }
     }
 
+    macosArm64().apply {
+        binaries.framework {
+            baseName = "RaTeX"
+            isStatic = true
+            linkerOpts(
+                "-L${macosNativeDir.absolutePath}",
+                "-lratex_ffi",
+            )
+        }
+        compilations.getByName("main") {
+            cinterops.create("ratex") {
+                defFile(file("src/nativeInterop/cinterop/ratex-macos.def"))
+                includeDirs(ratexHeaderDir)
+            }
+        }
+    }
+
     sourceSets {
         val skikoMain = create("skikoMain") {
             dependsOn(commonMain.get())
@@ -127,6 +145,9 @@ kotlin {
             }
         }
         iosMain {
+            dependsOn(skikoMain)
+        }
+        macosMain {
             dependsOn(skikoMain)
         }
         webMain {

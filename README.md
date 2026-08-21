@@ -325,6 +325,15 @@ JVM Desktop：
 bash prepare-jvm-rust.sh
 ```
 
+macOS KMP（`macosArm64`）：
+
+```bash
+bash prepare-jvm-rust.sh darwin-aarch64
+```
+
+该命令会准备 Kotlin/Native cinterop 和 framework link 所需的
+`library/native/darwin-aarch64/libratex_ffi.a`，以及 Desktop 使用的 `.dylib`。
+
 准备当前机器可构建的全部 Desktop Rust 产物：
 
 ```bash
@@ -431,6 +440,12 @@ bash prepare-jvm-rust.sh --all
 
 发布前请先准备好发布凭据与签名配置。
 
+在 macOS 上发布包含 `macosArm64` 的 `:library` KMP 主库前，请先执行：
+
+```bash
+bash prepare-jvm-rust.sh darwin-aarch64
+```
+
 发布当前机器支持的全部产物到 Maven Local：
 
 ```bash
@@ -461,6 +476,8 @@ bash prepare-jvm-rust.sh --all
 ```bash
 ./gradlew :library:publishKotlinMultiplatformPublicationToMavenCentralRepository
 ```
+
+该任务会发布包括 `macosArm64` 在内的 KMP 目标；macOS 目标使用上一步准备的静态 Rust 库。
 
 发布当前机器支持的全部 JVM Desktop native 库：
 

@@ -73,6 +73,9 @@ jobs:
       - name: Prepare Android Rust artifacts
         run: bash prepare-android-rust.sh
 
+      - name: Prepare macOS Rust artifacts
+        run: bash prepare-jvm-rust.sh darwin-aarch64
+
       - name: Publish library to Maven Central
         run: ./gradlew :library:publishAllPublicationsToMavenCentralRepository --stacktrace
         env:

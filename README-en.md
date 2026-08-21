@@ -322,6 +322,15 @@ JVM Desktop:
 bash prepare-jvm-rust.sh
 ```
 
+macOS KMP (`macosArm64`):
+
+```bash
+bash prepare-jvm-rust.sh darwin-aarch64
+```
+
+This prepares the `library/native/darwin-aarch64/libratex_ffi.a` static library
+required by Kotlin/Native cinterop and framework linking, along with the `.dylib` used by Desktop.
+
 Prepare all Desktop Rust artifacts supported by the current machine:
 
 ```bash
@@ -428,6 +437,12 @@ Publish the library to Maven Central:
 
 Make sure your publishing credentials and signing configuration are ready before publishing.
 
+On macOS, prepare the `macosArm64` Rust artifacts before publishing the `:library` KMP main library:
+
+```bash
+bash prepare-jvm-rust.sh darwin-aarch64
+```
+
 Publish all artifacts supported by the current machine to Maven Local:
 
 ```bash
@@ -458,6 +473,8 @@ Publish only the KMP main library:
 ```bash
 ./gradlew :library:publishKotlinMultiplatformPublicationToMavenCentralRepository
 ```
+
+This publishes KMP targets including `macosArm64`; the macOS target uses the static Rust library prepared above.
 
 Publish all JVM Desktop native libraries supported by the current machine:
 

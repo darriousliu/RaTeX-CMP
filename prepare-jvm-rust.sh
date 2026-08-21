@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# prepare-jvm-rust.sh — Build libratex_ffi for Compose Multiplatform JVM/Desktop
+# prepare-jvm-rust.sh — Build libratex_ffi for Compose Multiplatform JVM/Desktop and Kotlin/Native
 #
 # Usage:
 #   bash prepare-jvm-rust.sh
@@ -7,7 +7,7 @@
 #   bash prepare-jvm-rust.sh darwin-aarch64
 #   bash prepare-jvm-rust.sh linux-x86-64
 #
-# Output: library/native/{os-arch}/libratex_ffi.{dylib,so,dll}
+# Output: library/native/{os-arch}/libratex_ffi.{a,dylib,so,dll}
 
 set -eo pipefail
 
@@ -125,6 +125,14 @@ copy_lib() {
     fi
     mkdir -p "$dest"
     cp "$src" "$dest/"
+    if [ "$lib_file" = "libratex_ffi.dylib" ]; then
+        local static_src="$RATEX_ROOT/target/$rust_target/release/libratex_ffi.a"
+        if [ ! -f "$static_src" ]; then
+            echo "    ✗ $rust_target — $static_src not found" >&2
+            return 1
+        fi
+        cp "$static_src" "$dest/"
+    fi
     echo "    ✓ $rust_target → $dest/$lib_file"
 }
 
