@@ -1,0 +1,4 @@
+headers = ratex.h
+package = ratex
+staticLibraries = libratex_ffi.a
+libraryPaths.macos_arm64 = native/darwin-aarch64
