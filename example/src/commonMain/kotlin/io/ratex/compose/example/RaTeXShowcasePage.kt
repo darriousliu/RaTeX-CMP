@@ -20,6 +20,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -61,6 +62,7 @@ private sealed interface ShowcaseContent {
     data class BlockFormula(
         val latex: String,
         val fontSize: TextUnit = 20.sp,
+        val color: Color? = null,
     ) : ShowcaseContent
 
     data class BaselineRows(
@@ -330,6 +332,45 @@ private val showcaseSamples = listOf(
             """∑_{i=1}^{n}i\qquad∏_{i=1}^{n}i\qquad⋃_{i=1}^{n}A_i""",
         ),
     ),
+    ShowcaseSample(
+        version = "0.1.15",
+        label = """0.1.15 \slashed · Dirac notation""",
+        content = ShowcaseContent.BlockFormula(
+            """\slashed{p}=\gamma^\mu p_\mu\qquad(i\slashed{\partial}-m)\psi=0""",
+        ),
+    ),
+    ShowcaseSample(
+        version = "0.1.15",
+        label = """0.1.15 \centernot · centered relation negation""",
+        content = ShowcaseContent.BlockFormula(
+            """a\centernot{\implies}b\qquad a\centernot{\iff}b\qquad x\centernot{=}y""",
+        ),
+    ),
+    ShowcaseSample(
+        version = "0.1.15",
+        label = """0.1.15 \centernot · labeled arrows""",
+        content = ShowcaseContent.BlockFormula(
+            """A\centernot{\xrightarrow{f\circ g}}B\qquad A\centernot{\xleftrightarrow[\beta]{\alpha}}B""",
+        ),
+    ),
+    ShowcaseSample(
+        version = "0.1.15",
+        label = "0.1.15 formula color · boxes, rules and symbols",
+        content = ShowcaseContent.BlockFormula(
+            latex = """\boxed{x+y}\quad\frac{a}{b}\quad\rule{1em}{0.1em}\quad A\imageof B""",
+            color = Color(0xFF1565C0),
+        ),
+    ),
+    ShowcaseSample(
+        version = "0.1.15",
+        label = "0.1.15 inline notation and scripts",
+        content = ShowcaseContent.InlineParagraphs(
+            paragraphs = listOf(
+                """Inline slash notation $\slashed p$ and $\slashed{\partial}$ follows the surrounding text.""",
+                $$"""Centered negation $a\centernot{\implies}b$ also works in scripts: $x_{a\centernot{\implies}b}$.""",
+            ),
+        ),
+    ),
 )
 
 private val showcaseVersionFilters = (
@@ -410,6 +451,7 @@ private fun ShowcaseSampleContent(
         is ShowcaseContent.BlockFormula -> BlockFormula(
             latex = content.latex,
             fontSize = content.fontSize,
+            color = content.color,
         )
 
         is ShowcaseContent.BaselineRows -> BaselineRows(
@@ -607,6 +649,7 @@ private fun rememberInlineMathAnnotatedString(
 private fun BlockFormula(
     latex: String,
     fontSize: TextUnit,
+    color: Color?,
 ) {
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -619,6 +662,7 @@ private fun BlockFormula(
                 latex = latex,
                 fontSize = fontSize,
                 displayMode = true,
+                color = color ?: LocalContentColor.current,
             )
         }
     }
