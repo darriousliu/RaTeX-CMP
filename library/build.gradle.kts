@@ -15,6 +15,7 @@ group = findProperty("group").toString()
 version = findProperty("version").toString()
 
 val ratexHeaderDir = rootProject.file("external/RaTeX/crates/ratex-ffi/include")
+val bridgeHeaderDir = rootProject.file("rust-bridge/include")
 val iosNativeDir = rootProject.file("native/ios")
 val macosNativeDir = rootProject.file("library/native/darwin-aarch64")
 
@@ -45,7 +46,7 @@ kotlin {
     android {
         namespace = "io.ratex.compose"
         compileSdk {
-            version = release(36)
+            version = release(libs.versions.android.compileSdk.get().toInt())
         }
         minSdk = 23
         withDeviceTestBuilder {
@@ -55,6 +56,9 @@ kotlin {
         }
 
         androidResources.enable = true
+        optimization.consumerKeepRules.apply {
+            file("consumer-rules.pro")
+        }
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
@@ -69,10 +73,12 @@ kotlin {
     js(IR) {
         useEsModules()
         browser()
+        binaries.executable() // Compose UI tests need webpack to load the Skiko runtime.
     }
 
     wasmJs {
         browser()
+        binaries.executable()
     }
 
     applyDefaultHierarchyTemplate()
@@ -92,7 +98,7 @@ kotlin {
         target.compilations.getByName("main") {
             cinterops.create("ratex") {
                 defFile(file("src/nativeInterop/cinterop/ratex.def"))
-                includeDirs(ratexHeaderDir)
+                includeDirs(ratexHeaderDir, bridgeHeaderDir)
             }
         }
     }
@@ -109,7 +115,7 @@ kotlin {
         compilations.getByName("main") {
             cinterops.create("ratex") {
                 defFile(file("src/nativeInterop/cinterop/ratex-macos.def"))
-                includeDirs(ratexHeaderDir)
+                includeDirs(ratexHeaderDir, bridgeHeaderDir)
             }
         }
     }
@@ -170,8 +176,23 @@ kotlin {
     }
 }
 
+val bridgeWebResources = layout.buildDirectory.dir("generated/bridgeWebResources")
+val prepareBridgeWasm = tasks.register<Exec>("prepareBridgeWasm") {
+    group = "build"
+    description = "Builds the CMP fallback metrics WASM resource."
+    inputs.files(rootProject.fileTree("rust-bridge") { exclude("target/**") })
+    inputs.file(rootProject.file("prepare-bridge-rust.sh"))
+    inputs.file(rootProject.file("external/RaTeX/Cargo.toml"))
+    inputs.files(rootProject.fileTree("external/RaTeX/crates") { include("**/*.rs", "**/Cargo.toml") })
+    outputs.dir(bridgeWebResources)
+    workingDir(rootProject.rootDir)
+    commandLine("bash", "prepare-bridge-rust.sh", "wasm32-unknown-unknown",
+        bridgeWebResources.get().dir("files/bridge").asFile.absolutePath, "wasm")
+}
+
 compose.resources {
     packageOfResClass = "io.ratex.compose.resources"
+    customDirectory(sourceSetName = "webMain", directoryProvider = prepareBridgeWasm.map { bridgeWebResources.get() })
 }
 
 mavenPublishing {

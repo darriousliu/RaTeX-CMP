@@ -56,7 +56,7 @@ kotlin {
     android {
         namespace = "io.ratex.compose.example"
         compileSdk {
-            version = release(36)
+            version = release(libs.versions.android.compileSdk.get().toInt())
         }
         minSdk = 23
 

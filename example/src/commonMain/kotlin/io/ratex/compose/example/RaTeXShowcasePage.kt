@@ -69,6 +69,10 @@ private sealed interface ShowcaseContent {
         val rows: List<BaselineRow>,
         val fontSize: TextUnit = 20.sp,
     ) : ShowcaseContent
+
+    data class FallbackMetrics(
+        val latex: String,
+    ) : ShowcaseContent
 }
 
 private data class BaselineRow(
@@ -371,6 +375,11 @@ private val showcaseSamples = listOf(
             ),
         ),
     ),
+    ShowcaseSample(
+        version = "0.1.15",
+        label = "0.1.15 · CMP explicit fallback metrics",
+        content = ShowcaseContent.FallbackMetrics("""\text{中文}"""),
+    ),
 )
 
 private val showcaseVersionFilters = (
@@ -458,6 +467,8 @@ private fun ShowcaseSampleContent(
             rows = content.rows,
             fontSize = content.fontSize,
         )
+
+        is ShowcaseContent.FallbackMetrics -> FallbackMetricsExample(content.latex)
     }
 }
 

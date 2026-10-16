@@ -67,6 +67,7 @@ for rust_target in "${ANDROID_TARGETS[@]}"; do
     dest="$JNILIBS/$abi"
     mkdir -p "$dest"
     cp "$RATEX_ROOT/target/$rust_target/release/libratex_ffi.so" "$dest/"
+    bash "$PROJECT_ROOT/prepare-bridge-rust.sh" "$rust_target" "$dest" android
 done
 
 python3 "$RATEX_ROOT/scripts/verify_android_elf.py" "$JNILIBS"

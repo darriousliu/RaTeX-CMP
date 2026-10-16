@@ -3,6 +3,8 @@ package io.ratex
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,6 +12,79 @@ import kotlin.test.assertTrue
 import kotlin.test.fail
 
 abstract class RaTeXEngineCommonTestSuite : DisplayListCommonTestSuite() {
+    @Test
+    fun fallback_empty_map_preserves_the_original_result(): TestResult = runTest {
+        for (displayMode in listOf(false, true)) {
+            val source = """\frac{\text{ш中}}{\sqrt{x}}"""
+            val expected = parseFormula(source, displayMode, Color.Blue)
+            assertEquals(expected, RaTeXEngine.parseWithFallbackMetrics(source, RaTeXFallbackMetrics.Empty, displayMode, Color.Blue))
+        }
+    }
+
+    @Test
+    fun fallback_metrics_replace_only_missing_glyphs(): TestResult = runTest {
+        beforeParse()
+        val metrics = RaTeXFallbackMetrics.of(mapOf('ш'.code to FallbackGlyphMetrics(0.82, 0.53, 0.12),
+            'і'.code to FallbackGlyphMetrics(0.27, 0.74, 0.0), 'x'.code to FallbackGlyphMetrics(9.0, 9.0, 9.0)))
+        val pair = RaTeXEngine.parseWithFallbackMetrics("""\text{ші}""", metrics, color = Color.Blue)
+        assertTrue(abs(pair.width - 1.09) < 1e-9)
+        assertEquals(listOf(RaTeXColor(0f, 0f, 1f, 1f), RaTeXColor(0f, 0f, 1f, 1f)), pair.glyphColors())
+        for (source in listOf("x", """\text{Ж}""")) {
+            assertEquals(parseFormula(source), RaTeXEngine.parseWithFallbackMetrics(source, metrics))
+        }
+    }
+
+    @Test
+    fun fallback_metrics_apply_style_scaling_once(): TestResult = runTest {
+        beforeParse()
+        val metrics = RaTeXFallbackMetrics.of(mapOf('ш'.code to FallbackGlyphMetrics(0.82, 0.53, 0.12)))
+        for ((prefix, scale) in listOf("" to 1.0, """\scriptstyle""" to 0.7,
+            """\scriptscriptstyle""" to 0.5, """\Huge""" to 2.488)) {
+            val result = RaTeXEngine.parseWithFallbackMetrics(prefix + """\text{ш}""", metrics)
+            assertTrue(abs(result.width - 0.82 * scale) < 1e-9)
+            assertTrue(abs(result.height - 0.53 * scale) < 1e-9)
+            assertTrue(abs(result.depth - 0.12 * scale) < 1e-9)
+        }
+    }
+
+    @Test
+    fun fallback_metrics_support_non_bmp_and_blocking_calls(): TestResult = runTest {
+        beforeParse()
+        val metrics = RaTeXFallbackMetrics.of(mapOf(0x1F60A to FallbackGlyphMetrics(1.2, 0.9, 0.2)))
+        val result = RaTeXEngine.parseWithFallbackMetrics("""\text{😊}""", metrics)
+        assertTrue(abs(result.width - 1.2) < 1e-9)
+        assertEquals(0x1F60A, result.items.filterIsInstance<DisplayItem.GlyphPath>().single().charCode)
+        assertEquals(result, RaTeXEngine.parseBlockingWithFallbackMetrics("""\text{😊}""", metrics))
+    }
+
+    @Test
+    fun fallback_metrics_are_isolated_between_concurrent_calls(): TestResult = runTest {
+        beforeParse()
+        val baseline = parseFormula("""\text{ш}""")
+        (1..8).map { index -> async {
+            val width = index / 10.0
+            val metrics = RaTeXFallbackMetrics.of(mapOf('ш'.code to FallbackGlyphMetrics(width, 0.5, 0.1)))
+            assertTrue(abs(RaTeXEngine.parseWithFallbackMetrics("""\text{ш}""", metrics).width - width) < 1e-9)
+        } }.awaitAll()
+        assertEquals(baseline, parseFormula("""\text{ш}"""))
+    }
+
+    @Test
+    fun fallback_bridge_enforces_limits_and_recovers(): TestResult = runTest {
+        beforeParse()
+        val metrics = RaTeXFallbackMetrics.of(mapOf('ш'.code to FallbackGlyphMetrics(0.82, 0.53, 0.12)))
+        val overflow = """\pmb{""".repeat(13) + """\begin{array}{:c:}\rule{1em}{10em}\end{array}""" + "}".repeat(13)
+        for (source in listOf("""\char9999999999999999999""", overflow)) {
+            try {
+                RaTeXEngine.parseWithFallbackMetrics(source, metrics)
+                fail("Expected an error for over-limit input")
+            } catch (error: RaTeXException) {
+                assertTrue(error.message?.contains("out of range") == true || error.message?.contains("resource limit") == true)
+            }
+            assertTrue(abs(RaTeXEngine.parseWithFallbackMetrics("""\text{ш}""", metrics).width - 0.82) < 1e-9)
+        }
+    }
+
     @Test
     fun parse_compose_example_formulas(): TestResult = runTest {
         val formulas = listOf(

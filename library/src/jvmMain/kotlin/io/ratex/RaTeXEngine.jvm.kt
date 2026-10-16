@@ -82,20 +82,20 @@ internal interface RaTeXNative : Library {
         )
 
         val instance: RaTeXNative by lazy {
-            loadBundledOrSystem()
+            loadLibrary(LIBRARY_NAME, RaTeXNative::class.java)
         }
 
-        private fun loadBundledOrSystem(): RaTeXNative {
-            val extracted = extractBundledLibrary()
+        internal fun <T : Library> loadLibrary(name: String, type: Class<T>): T {
+            val extracted = extractBundledLibrary(name)
             return if (extracted != null) {
-                Native.load(extracted.absolutePath, RaTeXNative::class.java, LOAD_OPTIONS)
+                Native.load(extracted.absolutePath, type, LOAD_OPTIONS)
             } else {
-                Native.load(LIBRARY_NAME, RaTeXNative::class.java, LOAD_OPTIONS)
+                Native.load(name, type, LOAD_OPTIONS)
             }
         }
 
-        private fun extractBundledLibrary(): File? {
-            val mappedName = System.mapLibraryName(LIBRARY_NAME)
+        private fun extractBundledLibrary(name: String): File? {
+            val mappedName = System.mapLibraryName(name)
             val resourcePath = resourceCandidates(mappedName).firstNotNullOfOrNull { candidate ->
                 RaTeXNative::class.java.classLoader.getResource(candidate)?.let { candidate }
             } ?: return null

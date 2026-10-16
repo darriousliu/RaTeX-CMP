@@ -1,0 +1,26 @@
+[package]
+name = "ratex-cmp-bridge"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+description = "CMP-owned fallback glyph metrics bridge for RaTeX 0.1.15"
+
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+ratex-layout = { path = "../external/RaTeX/crates/ratex-layout" }
+ratex-parser = { path = "../external/RaTeX/crates/ratex-parser" }
+ratex-types = { path = "../external/RaTeX/crates/ratex-types" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[target.'cfg(target_os = "android")'.dependencies]
+jni = { version = "0.21", default-features = false }
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
