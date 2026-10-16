@@ -81,3 +81,34 @@ adb -s <serial> shell am instrument -w -r \
 现有 Espresso 在 Android 17 上访问 `InputManager.getInstance` 失败，所以完整 UI 测试在 Android 11 上验证；未通过变更生产依赖规避这一测试框架兼容问题。尝试的临时 Android 16 / 16 KB 模拟器在启动阶段崩溃，未计入通过结果。临时模拟器已关闭，用户原有设备保持运行。
 
 本次验证不包含真机签名安装、远端发布流水线执行或最终应用 APK 的 ZIP 对齐校验。ELF 对齐检查针对库本身，不能替代应用打包后的 ZIP 对齐检查。
+
+## 发布前复验（2026-10-16）
+
+以下结果针对完成依赖升级和 compileSdk 37 统一后的发行候选代码 `dc7c6b0`。
+上文为最初升级阶段的完整测试记录，不能替代此处对最终发行候选的验证范围说明。
+
+- JVM 39 项、macOS Native 37 项、iOS Simulator 36 项回归通过。
+- Android AAR、测试 APK，以及 example Debug / Release 构建通过。
+- 重新构建 iOS 两个 arm64 静态库，unwind 重定位检查通过；Android 四个 ABI 构建通过。
+- 在临时 Maven 仓库完成 KMP 主库及 macOS/Linux 桌面库的本地发布演练，共 12 组 `0.1.15` 产物。
+- 检查所有产物的 POM 版本、Gradle module metadata 及其引用的文件；发布 AAR 的两个 64 位 ABI 通过 16 KB 对齐验证。
+- JS/Wasm 的 KLIB 和发布元数据已生成并检查。本次未重新执行浏览器测试；此前发现的 Yarn 工具依赖锁文件不一致仍保留，未在发布准备中调整锁文件或测试配置。
+
+本地发布演练命令（临时仓库中跳过签名，不上传 Maven Central）：
+
+```bash
+./gradlew :library:jvmTest :library:macosArm64Test :library:iosSimulatorArm64Test \
+  publishToMavenLocal -PskipSigning \
+  -Dmaven.repo.local=/tmp/ratex-0.1.15-release-maven
+python3 external/RaTeX/scripts/verify_android_elf.py \
+  /tmp/ratex-0.1.15-release-maven/io/github/darriousliu/ratex-android/0.1.15/ratex-android-0.1.15.aar
+```
+
+Windows 原生产物未在本机构建；正式签名、Windows 构建和 Maven Central 上传仍由发布流水线验证。
+本机为 Xcode 27.0；CI 固定的 Xcode 26.4 / Apple SDK 26.4 已对照
+[官方 runner 镜像清单](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md)
+确认存在，尚未实际运行这次远端流水线。
+
+准备时已确认远端无 `v0.1.15` 标签或 Release，Maven Central 主库最新版本为 `0.1.14`。
+推送 `v0.1.15` 标签会触发 `.github/workflows/publish.yml` 自动发布；准备阶段不推送标签。
+发布正文见 [0.1.15 发布说明](releases/0.1.15.md)。
