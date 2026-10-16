@@ -2,6 +2,20 @@ name: Publish
 
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: Publication target
+        type: choice
+        default: all
+        options:
+          - all
+          - library
+          - desktop-native-unix
+          - desktop-native-windows
+      release_ref:
+        description: Tag or commit to publish (defaults to the workflow ref)
+        type: string
+        required: false
   push:
     tags:
       - "v*"
@@ -22,6 +36,7 @@ env:
 jobs:
   publish-library:
     name: Publish KMP Library
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == 'library'
     runs-on: macos-26
     timeout-minutes: 90
 
@@ -29,6 +44,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.release_ref || github.ref }}
           submodules: recursive
 
       - name: Validate Gradle Wrapper
@@ -45,6 +61,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -102,6 +120,7 @@ jobs:
 
   publish-desktop-native-unix:
     name: Publish Desktop Native (macOS + Linux)
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == 'desktop-native-unix'
     runs-on: macos-26
     timeout-minutes: 90
 
@@ -109,6 +128,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.release_ref || github.ref }}
           submodules: recursive
 
       - name: Validate Gradle Wrapper
@@ -155,6 +175,7 @@ jobs:
 
   publish-desktop-native-windows:
     name: Publish Desktop Native (Windows)
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == 'desktop-native-windows'
     runs-on: windows-2025
     timeout-minutes: 60
 
@@ -162,6 +183,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.release_ref || github.ref }}
           submodules: recursive
 
       - name: Validate Gradle Wrapper
