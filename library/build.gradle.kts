@@ -136,6 +136,8 @@ kotlin {
         named("androidDeviceTest") {
             dependencies {
                 implementation(libs.androidx.test.runner)
+                // The KMP device test APK hosts its own Compose test activity.
+                implementation(libs.androidx.compose.ui.test.manifest)
             }
         }
         jvmMain {
@@ -153,7 +155,7 @@ kotlin {
         webMain {
             dependsOn(skikoMain)
             dependencies {
-                implementation(npm("ratex-wasm", "0.1.14"))
+                implementation(npm("ratex-wasm", "0.1.15"))
             }
         }
         commonTest.dependencies {

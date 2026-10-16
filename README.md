@@ -67,7 +67,7 @@ repositories {
 当前 KMP 主库坐标为：
 
 ```kotlin
-implementation("io.github.darriousliu:ratex:0.1.14")
+implementation("io.github.darriousliu:ratex:0.1.15")
 ```
 
 在 Kotlin Multiplatform 项目中，通常添加到 `commonMain`：
@@ -76,7 +76,7 @@ implementation("io.github.darriousliu:ratex:0.1.14")
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.14")
+            implementation("io.github.darriousliu:ratex:0.1.15")
         }
     }
 }
@@ -88,8 +88,8 @@ kotlin {
 kotlin {
     sourceSets {
         jvmMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.14")
-            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.14")
+            implementation("io.github.darriousliu:ratex:0.1.15")
+            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.15")
         }
     }
 }
@@ -276,7 +276,8 @@ git submodule update --init --recursive
 
 按平台不同，可能还会用到这些工具：
 
-- Android：`cargo-ndk`
+- Android：`cargo-ndk`、Python 3（用于 ELF 对齐校验）
+- iOS：固定的 `nightly-2026-08-16` 和 `rust-src`（准备脚本会自动安装）
 - Desktop 全平台 native 打包：`cargo-zigbuild` 和 `zig`
 
 ### 3. 安装对应平台的 Rust target
@@ -292,7 +293,8 @@ rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-and
 iOS：
 
 ```bash
-rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
+rustup toolchain install nightly-2026-08-16 --profile minimal --component rust-src
+rustup target add --toolchain nightly-2026-08-16 aarch64-apple-ios aarch64-apple-ios-sim
 ```
 
 JVM Desktop：
@@ -318,6 +320,11 @@ iOS：
 ```bash
 bash prepare-ios-rust.sh
 ```
+
+脚本与 RaTeX 0.1.15 上游一致，使用 `-Z build-std=std,panic_abort` 重编 iOS 标准库，
+并在复制静态库前检查其 unwind 元数据不引用 `_rust_eh_personality`。
+测试其他 nightly 时可设置 `RATEX_IOS_RUST_TOOLCHAIN`。Android 准备脚本会检查
+`arm64-v8a` 和 `x86_64` 的 ELF LOAD/GNU_RELRO 是否满足 16 KB 对齐。
 
 JVM Desktop：
 
@@ -376,6 +383,20 @@ Web 示例：
 ./gradlew :example:jsBrowserDevelopmentRun
 ./gradlew :example:wasmJsBrowserDevelopmentRun
 ```
+
+升级核心后，可运行共享回归测试并检查 Android 发布产物：
+
+```bash
+./gradlew :library:jvmTest :library:iosSimulatorArm64Test :library:macosArm64Test
+./gradlew :library:jsBrowserTest :library:wasmJsBrowserTest
+# 需要已连接的 Android 设备或模拟器
+./gradlew :library:connectedAndroidDeviceTest
+./gradlew :library:bundleAndroidMainAar
+python3 external/RaTeX/scripts/verify_android_elf.py library/build/outputs/aar/library.aar
+```
+
+0.1.15 回归覆盖 `\slashed`、`\centernot`、隐式几何元素颜色继承，以及宏展开、
+布局和 `\char` 超限错误后的恢复。ELF 校验不代替最终应用 APK 的 ZIP 对齐校验。
 
 ### 6. 开发建议
 

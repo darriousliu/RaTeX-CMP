@@ -122,6 +122,103 @@ abstract class RaTeXEngineCommonTestSuite : DisplayListCommonTestSuite() {
     }
 
     @Test
+    fun parse_0_1_15_slashed_preserves_body_and_overlays_slash(): TestResult = runTest {
+        for (displayMode in listOf(true, false)) {
+            val body = parseFormula("p", displayMode)
+            val slash = parseFormula("/", displayMode)
+            val slashed = parseFormula("""\slashed{p}""", displayMode)
+
+            assertDoubleClose(
+                maxOf(body.width, slash.width),
+                slashed.width,
+                "Expected slashed p to reserve the body or slash advance, not their sum",
+            )
+            assertEquals(2, slashed.items.size)
+            assertEquals(body.singleGlyph('p').font, slashed.singleGlyph('p').font)
+            assertEquals(slash.singleGlyph('/').font, slashed.singleGlyph('/').font)
+            assertEquals(
+                slashed,
+                parseFormula("""\slashed p""", displayMode),
+                "Expected braced and unbraced slash arguments to render identically",
+            )
+        }
+    }
+
+    @Test
+    fun parse_0_1_15_centernot_preserves_relation_spacing(): TestResult = runTest {
+        for (displayMode in listOf(true, false)) {
+            val plain = parseFormula("""a\implies b""", displayMode)
+            val negated = parseFormula("""a\centernot{\implies}b""", displayMode)
+            val centered = parseFormula("""\centernot{\implies}""", displayMode)
+            val leftAligned = parseFormula("""\not\implies""", displayMode)
+            val centeredOverlay = centered.singleGlyph('\uE020')
+            val leftOverlay = leftAligned.singleGlyph('\uE020')
+
+            assertDoubleClose(plain.width, negated.width, "Expected unchanged relation spacing")
+            assertEquals(plain.items.size + 1, negated.items.size)
+            assertTrue(
+                centeredOverlay.x > leftOverlay.x,
+                "Expected the negation overlay to be centered over the whole implication",
+            )
+        }
+    }
+
+    @Test
+    fun parse_0_1_15_implicit_geometry_inherits_formula_color(): TestResult = runTest {
+        val displayList = parseFormula(
+            latex = """\boxed{x}\quad\rule{1em}{0.1em}\quad\imageof""",
+            color = Color.Blue,
+        )
+
+        assertTrue(displayList.items.any { it is DisplayItem.GlyphPath })
+        assertTrue(displayList.items.any { it is DisplayItem.Line })
+        assertTrue(displayList.items.any { it is DisplayItem.Rect })
+        assertTrue(displayList.items.any { it is DisplayItem.Path })
+        displayList.items.forEach { item ->
+            val color = when (item) {
+                is DisplayItem.GlyphPath -> item.color
+                is DisplayItem.Line -> item.color
+                is DisplayItem.Rect -> item.color
+                is DisplayItem.Path -> item.color
+            }
+            assertEquals(RaTeXColor(0f, 0f, 1f, 1f), color, "Expected inherited blue for $item")
+        }
+    }
+
+    @Test
+    fun parse_0_1_15_macro_budget_error_allows_subsequent_parse(): TestResult = runTest {
+        val latex = buildString {
+            append("""\edef\ma{xxxxxxxx}""")
+            for (name in 'a'..'r') {
+                append("\\edef\\m").append(name + 1)
+                append("{\\m").append(name).append("\\m").append(name).append('}')
+            }
+            append("""\ms""")
+        }
+        assertParseFailureAndRecovery(latex, "Macro expansion resource limit exceeded")
+    }
+
+    @Test
+    fun parse_0_1_15_layout_budget_error_allows_subsequent_parse(): TestResult = runTest {
+        val latex = """\pmb{""".repeat(13) +
+            """\begin{array}{:c:}\rule{1em}{10em}\end{array}""" +
+            "}".repeat(13)
+        assertParseFailureAndRecovery(latex, "Layout resource limit exceeded")
+    }
+
+    @Test
+    fun parse_0_1_15_overflowing_char_values_are_rejected(): TestResult = runTest {
+        for (latex in listOf(
+            """\char9999999999999999999""",
+            """\char"FFFFFFFFFFFFFFFF""",
+            """\char'7777777777777777777777""",
+        )) {
+            assertParseFailureAndRecovery(latex, """\char number out of range""")
+        }
+        assertEquals('A'.code, parseFormula("""\char65""").singleGlyph('A').charCode)
+    }
+
+    @Test
     fun parse_0_1_14_white_circle_uses_fitted_large_circle_glyph(): TestResult = runTest {
         val circle = parseFormula("○", displayMode = true)
         val square = parseFormula("□", displayMode = true)
@@ -582,13 +679,22 @@ abstract class RaTeXEngineCommonTestSuite : DisplayListCommonTestSuite() {
     private fun nestedGroupFormula(depth: Int): String =
         "{".repeat(depth) + "x" + "}".repeat(depth)
 
-    private suspend fun assertRaTeXParseFailure(latex: String) {
+    private suspend fun assertParseFailureAndRecovery(latex: String, expectedMessage: String) {
+        val expected = parseFormula("x+1")
+        assertRaTeXParseFailure(latex, expectedMessage)
+        assertEquals(expected, parseFormula("x+1"), "Expected parsing to recover after rejection")
+    }
+
+    private suspend fun assertRaTeXParseFailure(
+        latex: String,
+        expectedMessage: String = "Recursion limit exceeded",
+    ) {
         try {
             parseFormula(latex, displayMode = true)
         } catch (error: RaTeXException) {
             assertTrue(
-                error.message?.contains("Recursion limit exceeded") == true,
-                "Expected recursion limit error, got: ${error.message}",
+                error.message?.contains(expectedMessage) == true,
+                "Expected $expectedMessage, got: " + error.message,
             )
             return
         }

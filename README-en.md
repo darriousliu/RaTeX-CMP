@@ -65,7 +65,7 @@ repositories {
 The current KMP main library coordinates are:
 
 ```kotlin
-implementation("io.github.darriousliu:ratex:0.1.14")
+implementation("io.github.darriousliu:ratex:0.1.15")
 ```
 
 In a Kotlin Multiplatform project, you would typically add it to `commonMain`:
@@ -74,7 +74,7 @@ In a Kotlin Multiplatform project, you would typically add it to `commonMain`:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.14")
+            implementation("io.github.darriousliu:ratex:0.1.15")
         }
     }
 }
@@ -86,8 +86,8 @@ If you want to run on JVM Desktop, you also need to add the native runtime depen
 kotlin {
     sourceSets {
         jvmMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.14")
-            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.14")
+            implementation("io.github.darriousliu:ratex:0.1.15")
+            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.15")
         }
     }
 }
@@ -275,7 +275,8 @@ Recommended tools:
 
 Depending on the platform, you may also need:
 
-- Android: `cargo-ndk`
+- Android: `cargo-ndk` and Python 3 (for ELF alignment verification)
+- iOS: pinned `nightly-2026-08-16` with `rust-src` (installed by the preparation script)
 - Desktop full-platform native packaging: `cargo-zigbuild` and `zig`
 
 ### 3. Install the required Rust targets
@@ -291,7 +292,8 @@ rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-and
 iOS:
 
 ```bash
-rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
+rustup toolchain install nightly-2026-08-16 --profile minimal --component rust-src
+rustup target add --toolchain nightly-2026-08-16 aarch64-apple-ios aarch64-apple-ios-sim
 ```
 
 JVM Desktop:
@@ -315,6 +317,12 @@ iOS:
 ```bash
 bash prepare-ios-rust.sh
 ```
+
+Following upstream RaTeX 0.1.15, the script rebuilds the iOS standard library with
+`-Z build-std=std,panic_abort` and checks that unwind metadata does not reference
+`_rust_eh_personality` before copying each archive. Set `RATEX_IOS_RUST_TOOLCHAIN`
+to test another nightly. The Android preparation script verifies 16 KB alignment
+of ELF LOAD/GNU_RELRO segments for `arm64-v8a` and `x86_64`.
 
 JVM Desktop:
 
@@ -373,6 +381,21 @@ Web sample:
 ./gradlew :example:jsBrowserDevelopmentRun
 ./gradlew :example:wasmJsBrowserDevelopmentRun
 ```
+
+After upgrading the core, run the shared regressions and verify the Android artifact:
+
+```bash
+./gradlew :library:jvmTest :library:iosSimulatorArm64Test :library:macosArm64Test
+./gradlew :library:jsBrowserTest :library:wasmJsBrowserTest
+# Requires a connected Android device or emulator
+./gradlew :library:connectedAndroidDeviceTest
+./gradlew :library:bundleAndroidMainAar
+python3 external/RaTeX/scripts/verify_android_elf.py library/build/outputs/aar/library.aar
+```
+
+The 0.1.15 regressions cover `\slashed`, `\centernot`, inherited geometry colors,
+and recovery after macro, layout, and `\char` limit errors. ELF checks do not
+replace ZIP alignment verification of the final application APK.
 
 ### 6. Development suggestions
 

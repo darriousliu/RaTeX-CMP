@@ -13,7 +13,6 @@ import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
 import io.ratex.DisplayItem
@@ -27,7 +26,7 @@ import kotlin.test.assertNotEquals
 @OptIn(ExperimentalTestApi::class)
 class RaTeXBaselineLayoutTest {
     @Test
-    fun ratex_publishes_math_baseline_alignment_lines() = runComposeUiTest {
+    fun ratex_publishes_math_baseline_alignment_lines() = runRaTeXUiTest {
         var firstBaseline = AlignmentLine.Unspecified
         var lastBaseline = AlignmentLine.Unspecified
         var measuredWidth = -1
@@ -66,7 +65,7 @@ class RaTeXBaselineLayoutTest {
     }
 
     @Test
-    fun row_align_by_baseline_places_ratex_on_text_baseline() = runComposeUiTest {
+    fun row_align_by_baseline_places_ratex_on_text_baseline() = runRaTeXUiTest {
         var beforeTextBaselineY = Float.NaN
         var formulaBaselineY = Float.NaN
         var afterTextBaselineY = Float.NaN

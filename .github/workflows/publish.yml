@@ -52,6 +52,11 @@ jobs:
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked --force
 
+      - name: Set up Python for Android ELF verification
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
       - name: Select Xcode 26.4
         run: |
           set -euo pipefail
@@ -67,6 +72,8 @@ jobs:
           test "$(xcrun --sdk iphoneos --show-sdk-version)" = "$APPLE_SDK_VERSION"
           test "$(xcrun --sdk iphonesimulator --show-sdk-version)" = "$APPLE_SDK_VERSION"
 
+      # Installs the pinned nightly + rust-src, rebuilds std with panic_abort,
+      # and verifies both iOS static libraries before copying them.
       - name: Prepare iOS Rust artifacts
         run: bash prepare-ios-rust.sh
 
@@ -75,6 +82,14 @@ jobs:
 
       - name: Prepare macOS Rust artifacts
         run: bash prepare-jvm-rust.sh darwin-aarch64
+
+      - name: Run JVM and iOS simulator regression tests
+        run: ./gradlew :library:jvmTest :library:iosSimulatorArm64Test --stacktrace
+
+      - name: Build and verify Android AAR
+        run: |
+          ./gradlew :library:bundleAndroidMainAar --stacktrace
+          python3 external/RaTeX/scripts/verify_android_elf.py library/build/outputs/aar/library.aar
 
       - name: Publish library to Maven Central
         run: ./gradlew :library:publishAllPublicationsToMavenCentralRepository --stacktrace

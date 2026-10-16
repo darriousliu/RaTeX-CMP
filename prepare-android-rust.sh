@@ -5,11 +5,12 @@
 #   cargo install cargo-ndk
 #   rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
 #   NDK installed (set ANDROID_NDK_HOME or let cargo-ndk auto-detect)
+#   Python 3 (for the upstream 64-bit ELF LOAD/RELRO alignment check)
 #
 # Output:
-#   library/src/androidMain/jniLibs/{arm64-v8a,armeabi-v7a,x86_64}/libratex_ffi.so
+#   library/src/androidMain/jniLibs/{arm64-v8a,armeabi-v7a,x86_64,x86}/libratex_ffi.so
 
-set -eo pipefail
+set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 RATEX_ROOT="$PROJECT_ROOT/external/RaTeX"
@@ -31,6 +32,11 @@ Install it with:
 If you are on Windows, also make sure Cargo's bin directory is on PATH before rerunning:
   %USERPROFILE%\.cargo\bin
 EOF
+    exit 1
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "Error: Python 3 is required to verify Android ELF alignment." >&2
     exit 1
 fi
 
@@ -62,5 +68,7 @@ for rust_target in "${ANDROID_TARGETS[@]}"; do
     mkdir -p "$dest"
     cp "$RATEX_ROOT/target/$rust_target/release/libratex_ffi.so" "$dest/"
 done
+
+python3 "$RATEX_ROOT/scripts/verify_android_elf.py" "$JNILIBS"
 
 echo "==> Done. Libraries copied to $JNILIBS"
