@@ -49,16 +49,6 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Check and test the CMP Rust bridge
-        run: |
-          cargo fmt --manifest-path rust-bridge/Cargo.toml -- --check
-          cargo test --manifest-path rust-bridge/Cargo.toml --locked
-
-      - name: Set up Node for the WASM bridge check
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked --force
 
@@ -83,7 +73,7 @@ jobs:
           test "$(xcrun --sdk iphonesimulator --show-sdk-version)" = "$APPLE_SDK_VERSION"
 
       # Installs the pinned nightly + rust-src, rebuilds std with panic_abort,
-      # and verifies all iOS static libraries before copying them.
+      # and verifies both iOS static libraries before copying them.
       - name: Prepare iOS Rust artifacts
         run: bash prepare-ios-rust.sh
 
@@ -95,11 +85,6 @@ jobs:
 
       - name: Run JVM and iOS simulator regression tests
         run: ./gradlew :library:jvmTest :library:iosSimulatorArm64Test --stacktrace
-
-      - name: Build and test the packaged WASM bridge
-        run: |
-          ./gradlew :library:prepareBridgeWasm --stacktrace
-          node rust-bridge/tests/wasm-smoke.mjs library/build/generated/bridgeWebResources/files/bridge/ratex_cmp_bridge.wasm
 
       - name: Build and verify Android AAR
         run: |

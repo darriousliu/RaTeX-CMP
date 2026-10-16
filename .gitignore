@@ -20,5 +20,4 @@ node_modules/
 gradle/gradle-daemon-jvm.properties
 native/*
 library/src/androidMain/jniLibs/
-rust-bridge/target/
 .hotswan/

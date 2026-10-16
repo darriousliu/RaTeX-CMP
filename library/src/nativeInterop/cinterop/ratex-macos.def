@@ -1,4 +1,4 @@
-headers = ratex.h ratex_cmp_bridge.h
+headers = ratex.h
 package = ratex
-staticLibraries = libratex_ffi.a libratex_cmp_bridge.a
+staticLibraries = libratex_ffi.a
 libraryPaths.macos_arm64 = native/darwin-aarch64

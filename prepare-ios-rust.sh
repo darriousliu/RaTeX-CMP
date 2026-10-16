@@ -39,7 +39,6 @@ for entry in "${TARGETS[@]}"; do
   bash "$RATEX_ROOT/scripts/verify-apple-static-libraries.sh" "$STATIC_LIB"
   mkdir -p "$OUT_DIR/$KMP_DIR"
   cp "$STATIC_LIB" "$OUT_DIR/$KMP_DIR/"
-  bash "$PROJECT_ROOT/prepare-bridge-rust.sh" "$RUST_TARGET" "$OUT_DIR/$KMP_DIR" ios
 done
 
 echo "==> Done. Static libraries copied to $OUT_DIR"

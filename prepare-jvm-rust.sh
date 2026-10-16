@@ -124,13 +124,6 @@ copy_lib() {
         return 1
     fi
     mkdir -p "$dest"
-    local bridge_mode=native host_target host_os
-    host_target="$(detect_host_target)"
-    host_os="$(detect_host_os "$host_target")"
-    if needs_zig_for_target "$rust_target" "$host_target" "$host_os"; then
-        bridge_mode=zig
-    fi
-    bash "$PROJECT_ROOT/prepare-bridge-rust.sh" "$rust_target" "$dest" "$bridge_mode"
     cp "$src" "$dest/"
     if [ "$lib_file" = "libratex_ffi.dylib" ]; then
         local static_src="$RATEX_ROOT/target/$rust_target/release/libratex_ffi.a"

@@ -53,7 +53,6 @@ afterEvaluate {
     val supportedHostOs = ratexDesktopNative.supportedHostOs.get()
     val isSupportedHost = currentHostOs() in supportedHostOs
     val nativeFile = rootProject.file("library/native/$nativeTarget/$nativeFileName")
-    val bridgeFile = rootProject.file("library/native/$nativeTarget/${nativeFileName.replace("ratex_ffi", "ratex_cmp_bridge")}")
 
     val commonPom = Action<MavenPom> {
         name.set("RaTeX Desktop Native ($nativeTarget)")
@@ -98,15 +97,12 @@ afterEvaluate {
             check(nativeFile.length() > 0L) {
                 "Desktop native library is empty: ${nativeFile.absolutePath}. Rebuild with prepare-jvm-rust.sh $nativeTarget before building/publishing."
             }
-            check(bridgeFile.isFile && bridgeFile.length() > 0L) {
-                "Missing CMP metrics bridge: ${bridgeFile.absolutePath}. Run prepare-jvm-rust.sh $nativeTarget."
-            }
         }
     }
 
     tasks.named<ProcessResources>("processResources") {
         dependsOn(verifyNativeArtifact)
-        from(listOf(nativeFile, bridgeFile)) {
+        from(nativeFile) {
             into("META-INF/ratex/native/$nativeTarget")
         }
     }
