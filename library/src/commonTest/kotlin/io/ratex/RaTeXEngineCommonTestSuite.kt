@@ -23,6 +23,9 @@ abstract class RaTeXEngineCommonTestSuite : DisplayListCommonTestSuite() {
             """\ce{CO2 + C -> 2 CO}\qquad \pu{5.3e-11 m}""" to true,
             """\cancel{x}+\bcancel{y}+\xcancel{z}\qquad \overbrace{a+b+\cdots+z}^{26}""" to true,
             """E = mc^2 \tag{1}""" to true,
+            """E=mc^2\tag{Energy A}""" to true,
+            $$"""f(x)=x^2\tag*{Case $x>0$}""" to true,
+            """\begin{align} a&=b\\ b&=c\\ c&=d\\ d&=e\\ e&=f\\ f&=g\\ g&=h\\ h&=i\\ i&=j\\ j&=k\\ k&=l\\ l&=m \end{align}""" to true,
             """\begin{array}{c:c} a & b \\ \hdashline c & d \end{array}""" to true,
             """\mathbb{R}\quad \mathcal{F}\quad \mathfrak{g}\quad \mathsf{ABC}\quad \mathtt{code}""" to true,
             """\textcolor{#1565c0}{blue}\quad \color{orange}{orange}\quad \textcolor[RGB]{178,34,34}{firebrick}""" to true,
@@ -118,6 +121,129 @@ abstract class RaTeXEngineCommonTestSuite : DisplayListCommonTestSuite() {
         formulas.forEach { latex ->
             val displayList = parseFormula(latex, displayMode = true)
             assertTrue(displayList.items.isNotEmpty(), "Expected parsed items for $latex")
+        }
+    }
+
+    @Test
+    fun parse_0_1_16_tags_use_text_mode_with_explicit_math(): TestResult = runTest {
+        val uprightFont = parseFormula("""\text{A}""").singleGlyph('A').font
+        val mathFont = parseFormula("A").singleGlyph('A').font
+        for (latex in listOf("""\tag{A}""", """\tag*{A}""")) {
+            val label = parseFormula(latex).singleGlyph('A')
+            assertEquals(uprightFont, label.font, "Expected upright tag text for $latex")
+            assertTrue(label.font != mathFont, "Expected tag text not to use math italics")
+        }
+
+        val mathLabel = parseFormula($$"""\tag{$x^2$}""")
+        val base = mathLabel.singleGlyph('x')
+        val exponent = mathLabel.singleGlyph('2')
+        assertEquals(parseFormula("x^2").singleGlyph('x').font, base.font)
+        assertTrue(exponent.y < base.y, "Expected the label's exponent above its base")
+        assertTrue(exponent.scale < base.scale, "Expected a script-sized label exponent")
+        assertParseFailureAndRecovery("""\tag{x^2}""", expectedMessage = null)
+    }
+
+    @Test
+    fun parse_0_1_16_tag_macros_expand_fully_without_changing_outer_mode(): TestResult = runTest {
+        val prefix = """\gdef\mytag{\TextOrMath{AB}{\alpha}}"""
+        for ((argument, expectedTag) in listOf(
+            """\tag\mytag""" to """\tag{AB}""",
+            """\tag{\mytag}""" to """\tag{AB}""",
+            """\tag*\mytag""" to """\tag*{AB}""",
+            """\tag*{\mytag}""" to """\tag*{AB}""",
+            """\tag * \mytag""" to """\tag*{AB}""",
+        )) {
+            assertEquals(
+                parseFormula("${expectedTag}x"),
+                parseFormula(prefix + argument + """\TextOrMath{\alpha}{x}"""),
+                "Expected the entire macro to expand as text and the following expression as math: $argument",
+            )
+        }
+        assertEquals(
+            parseFormula("""\tag{*A}"""),
+            parseFormula("""\gdef\mytag{*A}\tag\mytag"""),
+            "Expected an expanded leading star to remain inside the parenthesized tag",
+        )
+    }
+
+    @Test
+    fun parse_0_1_16_tag_star_skips_spaces_before_its_argument(): TestResult = runTest {
+        val expected = parseFormula("""\tag*{A}""")
+        assertEquals(
+            listOf('A'.code),
+            expected.items.filterIsInstance<DisplayItem.GlyphPath>().map { it.charCode },
+            "Expected a starred label without parentheses",
+        )
+        for (latex in listOf("""\tag* A""", """\tag * A""", """\tag*   {A}""")) {
+            assertEquals(expected, parseFormula(latex), "Expected spaces to be ignored: $latex")
+        }
+    }
+
+    @Test
+    fun parse_0_1_16_nested_tags_are_rejected_without_poisoning_later_parses(): TestResult = runTest {
+        for (latex in listOf(
+            """\tag{\tag{A}}""",
+            """\tag\tag{A}""",
+            """\tag""".repeat(300) + "{A}",
+        )) {
+            assertParseFailureAndRecovery(latex, expectedMessage = null)
+        }
+    }
+
+    @Test
+    fun parse_0_1_16_auto_numbering_draws_every_digit_on_its_row(): TestResult = runTest {
+        val rows = List(12) { "x&=y" }.joinToString("""\\""")
+        val displayList = parseFormula("""\begin{align}""" + rows + """\end{align}""")
+        val glyphs = displayList.items.filterIsInstance<DisplayItem.GlyphPath>()
+        val labelRows = glyphs
+            .filter { it.charCode.toChar() in "()0123456789" }
+            .groupBy { it.y }
+            .toList()
+            .sortedBy { (baseline, _) -> baseline }
+
+        assertEquals(12, labelRows.size, "Expected one automatic label on every row")
+        labelRows.forEachIndexed { index, (baseline, labelGlyphs) ->
+            val ordered = labelGlyphs.sortedBy { it.x }
+            val label = ordered.map { it.charCode.toChar() }.joinToString("")
+            assertEquals("(${index + 1})", label, "Expected all digits of row ${index + 1}")
+            val bodyGlyphs = glyphs.filter {
+                it.charCode.toChar() in "x=y" && abs(it.y - baseline) < 0.002
+            }
+            assertEquals(3, bodyGlyphs.size, "Expected label $label on its equation's baseline")
+            assertTrue(
+                ordered.first().x > bodyGlyphs.maxOf { it.x },
+                "Expected label $label to the right of its equation",
+            )
+            assertTrue(
+                ordered.zipWithNext().all { (left, right) -> left.x < right.x },
+                "Expected separate advancing glyphs for $label",
+            )
+            assertTrue(
+                ordered.last().x < displayList.width,
+                "Expected label $label to fit inside the display width",
+            )
+        }
+    }
+
+    @Test
+    fun parse_0_1_16_literal_and_macro_tags_share_the_structural_depth_budget(): TestResult = runTest {
+        for (useMacro in listOf(false, true)) {
+            fun tagFormula(depth: Int): String {
+                val body = nestedGroupFormula(depth)
+                return if (useMacro) {
+                    """\gdef\mytag{""" + body + """}\tag\mytag"""
+                } else {
+                    """\tag{""" + body + "}"
+                }
+            }
+
+            assertTrue(
+                parseFormula(tagFormula(31)).items.isNotEmpty(),
+                "Expected a tag with 31 nested groups to parse (macro=$useMacro)",
+            )
+            for (depth in listOf(32, 300)) {
+                assertParseFailureAndRecovery(tagFormula(depth), "Recursion limit exceeded")
+            }
         }
     }
 
@@ -679,7 +805,7 @@ abstract class RaTeXEngineCommonTestSuite : DisplayListCommonTestSuite() {
     private fun nestedGroupFormula(depth: Int): String =
         "{".repeat(depth) + "x" + "}".repeat(depth)
 
-    private suspend fun assertParseFailureAndRecovery(latex: String, expectedMessage: String) {
+    private suspend fun assertParseFailureAndRecovery(latex: String, expectedMessage: String?) {
         val expected = parseFormula("x+1")
         assertRaTeXParseFailure(latex, expectedMessage)
         assertEquals(expected, parseFormula("x+1"), "Expected parsing to recover after rejection")
@@ -687,15 +813,17 @@ abstract class RaTeXEngineCommonTestSuite : DisplayListCommonTestSuite() {
 
     private suspend fun assertRaTeXParseFailure(
         latex: String,
-        expectedMessage: String = "Recursion limit exceeded",
+        expectedMessage: String? = "Recursion limit exceeded",
     ) {
         try {
             parseFormula(latex, displayMode = true)
         } catch (error: RaTeXException) {
-            assertTrue(
-                error.message?.contains(expectedMessage) == true,
-                "Expected $expectedMessage, got: " + error.message,
-            )
+            if (expectedMessage != null) {
+                assertTrue(
+                    error.message?.contains(expectedMessage) == true,
+                    "Expected $expectedMessage, got: " + error.message,
+                )
+            }
             return
         }
         fail("Expected RaTeXException for over-limit formula with length ${latex.length}")

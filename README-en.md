@@ -65,7 +65,7 @@ repositories {
 The current KMP main library coordinates are:
 
 ```kotlin
-implementation("io.github.darriousliu:ratex:0.1.15")
+implementation("io.github.darriousliu:ratex:0.1.16")
 ```
 
 In a Kotlin Multiplatform project, you would typically add it to `commonMain`:
@@ -74,7 +74,7 @@ In a Kotlin Multiplatform project, you would typically add it to `commonMain`:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.15")
+            implementation("io.github.darriousliu:ratex:0.1.16")
         }
     }
 }
@@ -86,8 +86,8 @@ If you want to run on JVM Desktop, you also need to add the native runtime depen
 kotlin {
     sourceSets {
         jvmMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.15")
-            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.15")
+            implementation("io.github.darriousliu:ratex:0.1.16")
+            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.16")
         }
     }
 }
@@ -396,6 +396,12 @@ python3 external/RaTeX/scripts/verify_android_elf.py library/build/outputs/aar/l
 The 0.1.15 regressions cover `\slashed`, `\centernot`, inherited geometry colors,
 and recovery after macro, layout, and `\char` limit errors. ELF checks do not
 replace ZIP alignment verification of the final application APK.
+
+The 0.1.16 regressions cover text labels, label macro expansion, whitespace after
+`\tag*`, multi-digit automatic numbers, and label depth limits. Labels now use
+text mode; wrap math in `$...$`, for example replacing `\tag{x^2}` with
+`\tag{$x^2$}`. The `0.1.16` Showcase group includes text labels, mixed math labels,
+and multi-row numbering examples.
 
 ### 6. Development suggestions
 

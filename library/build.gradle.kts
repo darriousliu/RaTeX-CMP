@@ -69,10 +69,12 @@ kotlin {
     js(IR) {
         useEsModules()
         browser()
+        binaries.executable()
     }
 
     wasmJs {
         browser()
+        binaries.executable()
     }
 
     applyDefaultHierarchyTemplate()
@@ -136,6 +138,7 @@ kotlin {
         named("androidDeviceTest") {
             dependencies {
                 implementation(libs.androidx.test.runner)
+                implementation(libs.androidx.espresso.core)
                 // The KMP device test APK hosts its own Compose test activity.
                 implementation(libs.androidx.compose.ui.test.manifest)
             }
@@ -155,7 +158,7 @@ kotlin {
         webMain {
             dependsOn(skikoMain)
             dependencies {
-                implementation(npm("ratex-wasm", "0.1.15"))
+                implementation(npm("ratex-wasm", "0.1.16"))
             }
         }
         commonTest.dependencies {

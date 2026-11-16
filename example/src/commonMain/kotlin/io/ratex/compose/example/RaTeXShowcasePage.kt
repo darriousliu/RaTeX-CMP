@@ -371,6 +371,27 @@ private val showcaseSamples = listOf(
             ),
         ),
     ),
+    ShowcaseSample(
+        version = "0.1.16",
+        label = """0.1.16 \tag · upright text labels""",
+        content = ShowcaseContent.BlockFormula(
+            """E=mc^2\tag{Energy A}""",
+        ),
+    ),
+    ShowcaseSample(
+        version = "0.1.16",
+        label = """0.1.16 \tag* · text and math without parentheses""",
+        content = ShowcaseContent.BlockFormula(
+            $$"""f(x)=x^2\tag*{Case $x>0$}""",
+        ),
+    ),
+    ShowcaseSample(
+        version = "0.1.16",
+        label = "0.1.16 automatic equation numbers · rows 1–12",
+        content = ShowcaseContent.BlockFormula(
+            """\begin{align} a&=b\\ b&=c\\ c&=d\\ d&=e\\ e&=f\\ f&=g\\ g&=h\\ h&=i\\ i&=j\\ j&=k\\ k&=l\\ l&=m \end{align}""",
+        ),
+    ),
 )
 
 private val showcaseVersionFilters = (

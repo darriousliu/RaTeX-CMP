@@ -67,7 +67,7 @@ repositories {
 当前 KMP 主库坐标为：
 
 ```kotlin
-implementation("io.github.darriousliu:ratex:0.1.15")
+implementation("io.github.darriousliu:ratex:0.1.16")
 ```
 
 在 Kotlin Multiplatform 项目中，通常添加到 `commonMain`：
@@ -76,7 +76,7 @@ implementation("io.github.darriousliu:ratex:0.1.15")
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.15")
+            implementation("io.github.darriousliu:ratex:0.1.16")
         }
     }
 }
@@ -88,8 +88,8 @@ kotlin {
 kotlin {
     sourceSets {
         jvmMain.dependencies {
-            implementation("io.github.darriousliu:ratex:0.1.15")
-            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.15")
+            implementation("io.github.darriousliu:ratex:0.1.16")
+            runtimeOnly("io.github.darriousliu:ratex-native-darwin-aarch64:0.1.16")
         }
     }
 }
@@ -397,6 +397,10 @@ python3 external/RaTeX/scripts/verify_android_elf.py library/build/outputs/aar/l
 
 0.1.15 回归覆盖 `\slashed`、`\centernot`、隐式几何元素颜色继承，以及宏展开、
 布局和 `\char` 超限错误后的恢复。ELF 校验不代替最终应用 APK 的 ZIP 对齐校验。
+
+0.1.16 增加文本标签、标签宏展开、`\tag*` 空格处理、多位自动编号和标签深度边界回归。
+标签现在使用文本模式；标签内的数学内容需用 `$...$` 包裹，例如将 `\tag{x^2}`
+改为 `\tag{$x^2$}`。Showcase 的 `0.1.16` 分组包含文本标签、混合数学标签和多行编号示例。
 
 ### 6. 开发建议
 
